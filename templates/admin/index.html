@@ -1,0 +1,74 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}ShramLink Admin{% endblock %}
+
+{% block dashboard_content %}
+<main class="min-h-0 flex-1 overflow-y-auto" id="admin-main">
+    <!-- Verification Tab -->
+    <div id="tab-verify" class="tab-content">
+        <div class="flex flex-col gap-4 px-4 pb-6 pt-4">
+            <div>
+                <h1 class="text-xl font-extrabold text-foreground">Verification Queue</h1>
+                <p class="text-sm font-semibold text-muted-foreground" id="pending-count">Loading...</p>
+            </div>
+
+            <div class="flex gap-1 rounded-xl bg-muted p-1" role="tablist" aria-label="Verification type">
+                <button type="button" role="tab" aria-selected="true" onclick="switchVerifyTab('factories')"
+                        class="verify-tab-btn flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-bold bg-primary text-primary-foreground" id="tab-factories">
+                    Factories (GST) <span id="count-factories" class="rounded-full px-1.5 text-xs bg-background/25">0</span>
+                </button>
+                <button type="button" role="tab" aria-selected="false" onclick="switchVerifyTab('laborers')"
+                        class="verify-tab-btn flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-bold text-muted-foreground hover:text-foreground" id="tab-laborers">
+                    Laborers (KYC) <span id="count-laborers" class="rounded-full px-1.5 text-xs bg-background">0</span>
+                </button>
+            </div>
+
+            <ul id="verification-list" class="flex flex-col gap-3"></ul>
+        </div>
+    </div>
+
+    <!-- Escrow Tab -->
+    <div id="tab-escrow" class="tab-content hidden">
+        <div class="flex flex-col gap-4 px-4 pb-6 pt-4" id="escrow-content"></div>
+    </div>
+
+    <!-- Mass Hire Tab -->
+    <div id="tab-mass" class="tab-content hidden">
+        <div class="flex flex-col gap-4 px-4 pb-6 pt-4" id="mass-hire-content"></div>
+    </div>
+</main>
+
+<nav aria-label="Main" class="sticky bottom-0 z-20 border-t border-border bg-card">
+    <ul class="flex">
+        <li class="flex-1">
+            <button type="button" onclick="switchAdminTab('verify')" aria-current="page"
+                    class="relative flex min-h-16 w-full flex-col items-center justify-center gap-0.5 px-1 py-2 text-foreground">
+                <span class="absolute inset-x-6 top-0 h-1 rounded-b-full bg-foreground" aria-hidden="true"></span>
+                <i data-lucide="shield-check" class="size-6" stroke-width="2.5"></i>
+                <span class="text-xs font-bold leading-tight">Verify</span>
+                <span class="text-[11px] font-semibold leading-tight opacity-80">सत्यापन</span>
+            </button>
+        </li>
+        <li class="flex-1">
+            <button type="button" onclick="switchAdminTab('escrow')"
+                    class="relative flex min-h-16 w-full flex-col items-center justify-center gap-0.5 px-1 py-2 text-muted-foreground">
+                <i data-lucide="indian-rupee" class="size-6" stroke-width="2"></i>
+                <span class="text-xs font-bold leading-tight">Escrow</span>
+                <span class="text-[11px] font-semibold leading-tight opacity-80">भुगतान</span>
+            </button>
+        </li>
+        <li class="flex-1">
+            <button type="button" onclick="switchAdminTab('mass')"
+                    class="relative flex min-h-16 w-full flex-col items-center justify-center gap-0.5 px-1 py-2 text-muted-foreground">
+                <i data-lucide="truck" class="size-6" stroke-width="2"></i>
+                <span class="text-xs font-bold leading-tight">Mass Hire</span>
+                <span class="text-[11px] font-semibold leading-tight opacity-80">बड़ी भर्ती</span>
+            </button>
+        </li>
+    </ul>
+</nav>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

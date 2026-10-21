@@ -1,0 +1,203 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}Dashboard — ShramLink{% endblock %}
+
+{% block dashboard_content %}
+<main class="min-h-0 flex-1 overflow-y-auto" id="laborer-main">
+    <!-- Jobs Tab -->
+    <div id="tab-jobs" class="tab-content">
+        <div class="flex flex-col gap-4 pb-6">
+            <section class="bg-primary px-4 pb-5 pt-4 text-primary-foreground">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-sm font-semibold opacity-90">नमस्ते / Namaste</p>
+                        <h1 class="text-2xl font-extrabold leading-tight">{{ user_name }}</h1>
+                        <p class="mt-1 inline-flex items-center gap-1 rounded-full bg-primary-foreground/15 px-2.5 py-1 text-sm font-bold">
+                            <i data-lucide="map-pin" class="size-4"></i>
+                            Delhi NCR
+                        </p>
+                    </div>
+                    <div id="apply-counter" class="flex flex-col items-center rounded-xl px-3 py-2 text-center bg-primary-foreground text-primary" aria-live="polite">
+                        <span class="text-2xl font-extrabold leading-none">
+                            <span id="applied-today">13</span>
+                            <span class="text-base font-bold opacity-70"> / {{ DAILY_APPLY_LIMIT }}</span>
+                        </span>
+                        <span class="mt-1 text-[11px] font-bold leading-tight">Applied Today</span>
+                        <span class="text-[11px] font-semibold leading-tight">आज आवेदन</span>
+                    </div>
+                </div>
+            </section>
+
+            <div id="limit-alert" class="hidden mx-4 flex items-start gap-3 rounded-xl border-2 border-destructive bg-red-50 p-3 text-red-900" role="alert">
+                <i data-lucide="triangle-alert" class="mt-0.5 size-6 shrink-0 text-destructive"></i>
+                <div class="flex-1">
+                    <p class="font-extrabold">Daily limit reached / आज की सीमा पूरी</p>
+                    <p class="text-sm font-semibold">You've used all 15 applications. Come back tomorrow. / कल फिर आवेदन करें।</p>
+                    <button type="button" id="reset-demo" class="mt-2 text-sm font-bold text-destructive underline underline-offset-2">Reset demo counter</button>
+                </div>
+            </div>
+
+            <div class="no-scrollbar flex gap-2 overflow-x-auto px-4" role="group" aria-label="Filter jobs by skill">
+                <button type="button" class="filter-pill active" data-skill="all" onclick="filterJobs('all')">
+                    <i data-lucide="layout-grid" class="size-4"></i> All <span class="font-semibold opacity-80">/ सभी</span>
+                </button>
+                {% for skill in skills %}
+                <button type="button" class="filter-pill" data-skill="{{ skill.id }}" onclick="filterJobs('{{ skill.id }}')">
+                    <i data-lucide="{{ get_skill_icon(skill.id) }}" class="size-4"></i> {{ skill.label }} <span class="font-semibold opacity-80">/ {{ skill.hi }}</span>
+                </button>
+                {% endfor %}
+            </div>
+
+            <ul id="jobs-list" class="flex flex-col gap-3 px-4"></ul>
+        </div>
+    </div>
+
+    <!-- Voice Register Tab -->
+    <div id="tab-voice" class="tab-content hidden">
+        <div class="flex flex-col gap-5 px-4 pb-6 pt-5">
+            <div class="text-center">
+                <h1 class="text-xl font-extrabold text-foreground">Voice Registration</h1>
+                <p class="font-semibold text-muted-foreground">आवाज़ से पंजीकरण करें</p>
+            </div>
+
+            <div class="flex flex-col items-center gap-4 rounded-3xl border border-border bg-card px-4 py-8">
+                <div class="relative flex size-44 items-center justify-center">
+                    <span id="mic-ring-1" class="hidden absolute inset-0 animate-ping rounded-full bg-primary/25" aria-hidden="true"></span>
+                    <span id="mic-ring-2" class="hidden absolute inset-4 animate-pulse rounded-full bg-primary/20" aria-hidden="true"></span>
+                    <span id="mic-idle" class="absolute inset-3 animate-pulse rounded-full bg-primary/15" aria-hidden="true"></span>
+                    <button type="button" id="mic-btn" onclick="toggleMic()" 
+                            class="relative flex size-32 items-center justify-center rounded-full shadow-lg transition-transform active:scale-95 bg-primary text-primary-foreground"
+                            aria-pressed="false" aria-label="Tap to speak">
+                        <i data-lucide="mic" id="mic-icon" class="size-16" stroke-width="2.25"></i>
+                        <i data-lucide="square" id="mic-stop-icon" class="hidden size-12 fill-current"></i>
+                        <i data-lucide="check" id="mic-done-icon" class="hidden size-16" stroke-width="3"></i>
+                    </button>
+                </div>
+
+                <div class="flex h-10 items-center gap-1.5" aria-hidden="true">
+                    {% for i in range(9) %}
+                    <span class="voice-bar h-full w-1.5 rounded-full scale-y-[0.2] bg-border" style="animation-delay: {{ [0, 0.15, 0.3, 0.45, 0.3, 0.15, 0, 0.2, 0.4][i] }}s"></span>
+                    {% endfor %}
+                </div>
+
+                <div class="text-center" aria-live="polite">
+                    <div id="mic-idle-text">
+                        <p class="text-lg font-extrabold text-foreground">Tap to Speak</p>
+                        <p class="text-lg font-bold text-primary">बोलने के लिए दबाएं</p>
+                    </div>
+                    <div id="mic-listening-text" class="hidden">
+                        <p class="text-base font-extrabold text-foreground" id="current-prompt"></p>
+                        <p class="mt-1 text-sm font-semibold italic text-muted-foreground" id="current-heard"></p>
+                    </div>
+                    <div id="mic-done-text" class="hidden">
+                        <p class="text-lg font-extrabold text-primary">All details captured!</p>
+                        <p class="font-bold text-foreground">सारी जानकारी मिल गई</p>
+                    </div>
+                </div>
+            </div>
+
+            <section aria-labelledby="captured-heading" class="flex flex-col gap-3">
+                <h2 id="captured-heading" class="text-base font-extrabold text-foreground">
+                    Your Details <span class="font-semibold text-muted-foreground">/ आपकी जानकारी</span>
+                </h2>
+                <div id="field-name" class="rounded-xl border-2 bg-card p-3 border-border">
+                    <p class="text-xs font-bold uppercase tracking-wide text-muted-foreground">Name / नाम</p>
+                    <p class="mt-1 min-h-7 text-lg font-extrabold text-muted-foreground/50">—</p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div id="field-age" class="rounded-xl border-2 bg-card p-3 border-border">
+                        <p class="text-xs font-bold uppercase tracking-wide text-muted-foreground">Age / उम्र</p>
+                        <p class="mt-1 min-h-7 text-lg font-extrabold text-muted-foreground/50">—</p>
+                    </div>
+                    <div id="field-phone" class="rounded-xl border-2 bg-card p-3 border-border">
+                        <p class="text-xs font-bold uppercase tracking-wide text-muted-foreground">Phone / फ़ोन</p>
+                        <p class="mt-1 min-h-7 text-lg font-extrabold text-muted-foreground/50">—</p>
+                    </div>
+                </div>
+                <div id="field-skills" class="rounded-xl border-2 bg-card p-3 border-border">
+                    <p class="text-xs font-bold uppercase tracking-wide text-muted-foreground">Skills / हुनर</p>
+                    <div class="mt-2 flex min-h-8 flex-wrap gap-2">
+                        <span class="text-sm font-semibold text-muted-foreground">Auto-tagged from voice…</span>
+                    </div>
+                </div>
+
+                <details class="group rounded-xl border-2 border-border bg-card">
+                    <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between px-3 font-bold text-foreground">
+                        <span>Optional: Bank & KYC <span class="font-semibold text-muted-foreground">/ बैंक और KYC</span></span>
+                        <i data-lucide="chevron-down" class="size-5 transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <div class="flex flex-col gap-3 border-t border-border p-3">
+                        <label class="flex flex-col gap-1">
+                            <span class="text-sm font-bold text-foreground">UPI ID</span>
+                            <input type="text" inputmode="email" placeholder="ramesh@upi"
+                                   class="min-h-12 rounded-lg border-2 border-input bg-background px-3 text-base font-semibold outline-none focus:border-primary">
+                        </label>
+                        <label class="flex flex-col gap-1">
+                            <span class="text-sm font-bold text-foreground">e-Shram Card No. / ई-श्रम कार्ड</span>
+                            <input type="text" inputmode="numeric" placeholder="12-digit UAN"
+                                   class="min-h-12 rounded-lg border-2 border-input bg-background px-3 text-base font-semibold outline-none focus:border-primary">
+                        </label>
+                        <div class="flex items-center justify-between rounded-lg bg-muted px-3 py-2.5">
+                            <span class="text-sm font-bold text-foreground">KYC Status</span>
+                            <span class="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs font-bold text-warning ring-1 ring-warning/30">
+                                <i data-lucide="clock" class="size-3.5"></i> Pending Review
+                            </span>
+                        </div>
+                    </div>
+                </details>
+
+                <div class="flex gap-2">
+                    <button type="button" onclick="resetVoice()" aria-label="Start over"
+                            class="flex min-h-12 items-center justify-center rounded-xl border-2 border-border bg-card px-4 text-foreground">
+                        <i data-lucide="rotate-ccw" class="size-5"></i>
+                    </button>
+                    <button type="button" id="save-profile" disabled
+                            class="min-h-12 flex-1 rounded-xl bg-primary text-base font-extrabold text-primary-foreground disabled:bg-muted disabled:text-muted-foreground">
+                        Save Profile / सेव करें
+                    </button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- My Jobs Tab -->
+    <div id="tab-my" class="tab-content hidden">
+        <div class="flex flex-col gap-5 px-4 pb-6 pt-4" id="my-jobs-content"></div>
+    </div>
+</main>
+
+<nav aria-label="Main" class="sticky bottom-0 z-20 border-t border-border bg-card">
+    <ul class="flex">
+        <li class="flex-1">
+            <button type="button" onclick="switchTab('jobs')" aria-current="page"
+                    class="relative flex min-h-16 w-full flex-col items-center justify-center gap-0.5 px-1 py-2 text-primary">
+                <span class="absolute inset-x-6 top-0 h-1 rounded-b-full bg-primary" aria-hidden="true"></span>
+                <i data-lucide="briefcase" class="size-6" stroke-width="2.5"></i>
+                <span class="text-xs font-bold leading-tight">Jobs</span>
+                <span class="text-[11px] font-semibold leading-tight opacity-80">काम</span>
+            </button>
+        </li>
+        <li class="flex-1">
+            <button type="button" onclick="switchTab('voice')"
+                    class="relative flex min-h-16 w-full flex-col items-center justify-center gap-0.5 px-1 py-2 text-muted-foreground">
+                <i data-lucide="mic" class="size-6" stroke-width="2"></i>
+                <span class="text-xs font-bold leading-tight">Register</span>
+                <span class="text-[11px] font-semibold leading-tight opacity-80">पंजीकरण</span>
+            </button>
+        </li>
+        <li class="flex-1">
+            <button type="button" onclick="switchTab('my')"
+                    class="relative flex min-h-16 w-full flex-col items-center justify-center gap-0.5 px-1 py-2 text-muted-foreground">
+                <i data-lucide="wallet" class="size-6" stroke-width="2"></i>
+                <span class="text-xs font-bold leading-tight">My Jobs</span>
+                <span class="text-[11px] font-semibold leading-tight opacity-80">मेरे काम</span>
+            </button>
+        </li>
+    </ul>
+</nav>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/laborer.js') }}"></script>
+<script src="{{ url_for('static', filename='js/voice-assistant.js') }}"></script>
+{% endblock %}

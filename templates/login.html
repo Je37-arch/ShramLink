@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Log in — ShramLink{% endblock %}
+
+{% block content %}
+<div class="grid min-h-dvh place-items-center bg-background px-4 py-10">
+    <div class="w-full max-w-md">
+        <div class="mb-6 flex justify-center">
+            <a href="/" class="flex items-center gap-2" aria-label="ShramLink home">
+                <span class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <i data-lucide="hard-hat" class="size-5"></i>
+                </span>
+                <span class="text-lg font-extrabold tracking-tight text-foreground">Shram<span class="text-primary">Link</span></span>
+            </a>
+        </div>
+        <div class="rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <h1 class="text-2xl font-extrabold text-foreground">Log in</h1>
+            <p class="mt-1 text-sm text-muted-foreground">लॉग इन करें. Choose how you use ShramLink.</p>
+
+            <div role="tablist" aria-label="Account type" class="mt-5 flex gap-1 rounded-xl bg-muted p-1">
+                <button type="button" role="tab" aria-selected="{{ role == 'laborer' }}" 
+                        onclick="switchTab('laborer')" 
+                        class="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg text-sm font-bold transition-colors {% if role == 'laborer' %}bg-primary text-primary-foreground{% else %}text-muted-foreground hover:text-foreground{% endif %}">
+                    <i data-lucide="users" class="size-4"></i>
+                    Worker / मज़दूर
+                </button>
+                <button type="button" role="tab" aria-selected="{{ role == 'manager' }}" 
+                        onclick="switchTab('manager')" 
+                        class="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg text-sm font-bold transition-colors {% if role == 'manager' %}bg-manager text-manager-foreground{% else %}text-muted-foreground hover:text-foreground{% endif %}">
+                    <i data-lucide="building-2" class="size-4"></i>
+                    Factory / फ़ैक्टरी
+                </button>
+            </div>
+
+            <form method="POST" class="mt-5 space-y-4" novalidate>
+                <input type="hidden" name="role" id="roleInput" value="{{ role }}">
+                
+                {% if role == 'laborer' %}
+                <label class="block text-sm font-bold text-foreground">
+                    Mobile number
+                    <input name="phone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel"
+                           class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                           placeholder="98765 43210" value="{{ phone or '' }}" required>
+                </label>
+                <label class="block text-sm font-bold text-foreground">
+                    OTP
+                    <input name="otp" type="text" inputmode="numeric" maxlength="4" autocomplete="off"
+                           class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                           placeholder="4-digit code" required>
+                </label>
+                {% else %}
+                <label class="block text-sm font-bold text-foreground">
+                    Factory email
+                    <input name="email" type="email" autocomplete="username"
+                           class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                           placeholder="manager@factory.com" value="{{ email or '' }}" required>
+                </label>
+                <label class="block text-sm font-bold text-foreground">
+                    Password
+                    <input name="password" type="password" autocomplete="current-password"
+                           class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                           required>
+                </label>
+                {% endif %}
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <p role="alert" class="text-sm font-semibold {% if category == 'error' %}text-destructive{% else %}text-primary{% endif %}">{{ message }}</p>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <button type="submit" class="h-12 w-full rounded-lg text-base font-bold {% if role == 'laborer' %}bg-primary text-primary-foreground hover:bg-primary/90{% else %}bg-manager text-manager-foreground hover:bg-manager/90{% endif %}">
+                    Log in
+                </button>
+            </form>
+
+            <p class="mt-4 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
+                Demo login: {% if role == 'laborer' %}enter any 10-digit mobile number, then the OTP 1234.{% else %}enter any email, with the password factory123.{% endif %}
+            </p>
+        </div>
+        <p class="mt-5 text-center text-sm text-muted-foreground">
+            <a href="/" class="font-semibold text-primary hover:underline">Back to home</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function switchTab(newRole) {
+        document.getElementById('roleInput').value = newRole;
+        window.location.href = '{{ url_for("auth.login") }}?as=' + newRole;
+    }
+</script>
+{% endblock %}

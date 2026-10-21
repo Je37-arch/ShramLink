@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Register as Factory Manager — ShramLink{% endblock %}
+
+{% block content %}
+<div class="grid min-h-dvh place-items-center bg-background px-4 py-10">
+    <div class="w-full max-w-xl">
+        <div class="mb-6 flex justify-center">
+            <a href="/" class="flex items-center gap-2" aria-label="ShramLink home">
+                <span class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <i data-lucide="hard-hat" class="size-5"></i>
+                </span>
+                <span class="text-lg font-extrabold tracking-tight text-foreground">Shram<span class="text-primary">Link</span></span>
+            </a>
+        </div>
+        <div class="rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <h1 class="text-2xl font-extrabold text-foreground">Register Factory</h1>
+            <p class="mt-1 text-sm text-muted-foreground">फ़ैक्टरी पंजीकृत करें</p>
+
+            <form method="POST" class="mt-5 space-y-4" novalidate>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="block text-sm font-bold text-foreground">
+                        Email
+                        <input name="email" type="email" autocomplete="email"
+                               class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                               placeholder="manager@factory.com" required>
+                    </label>
+                    <label class="block text-sm font-bold text-foreground">
+                        Password
+                        <input name="password" type="password" autocomplete="new-password"
+                               class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                               placeholder="Min 6 characters" required minlength="6">
+                    </label>
+                </div>
+                
+                <label class="block text-sm font-bold text-foreground">
+                    Confirm Password
+                    <input name="confirm_password" type="password" autocomplete="new-password"
+                           class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                           placeholder="Confirm password" required minlength="6">
+                </label>
+                
+                <div class="border-t border-border pt-4">
+                    <h3 class="text-lg font-extrabold text-foreground mb-3">Factory Details</h3>
+                    
+                    <label class="block text-sm font-bold text-foreground">
+                        Factory Name
+                        <input name="factory_name" type="text" autocomplete="organization"
+                               class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                               placeholder="Shree Ganesh Auto Parts" required>
+                    </label>
+                    
+                    <label class="block text-sm font-bold text-foreground">
+                        Factory Address
+                        <textarea name="factory_address" rows="2"
+                                  class="mt-1.5 h-24 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                                  placeholder="Bawana Industrial Area, Delhi" required></textarea>
+                    </label>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="block text-sm font-bold text-foreground">
+                            GSTIN
+                            <input name="gstin" type="text" autocomplete="off" style="text-transform: uppercase;"
+                                   class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                                   placeholder="07AABCS1429B1Z5" required>
+                        </label>
+                        <label class="block text-sm font-bold text-foreground">
+                            PAN Number
+                            <input name="pan" type="text" autocomplete="off" style="text-transform: uppercase;"
+                                   class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                                   placeholder="AABCS1429B">
+                        </label>
+                    </div>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <p role="alert" class="text-sm font-semibold {% if category == 'error' %}text-destructive{% else %}text-primary{% endif %}">{{ message }}</p>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <button type="submit" class="h-12 w-full rounded-lg text-base font-bold bg-manager text-manager-foreground hover:bg-manager/90">
+                    Submit for Verification
+                </button>
+            </form>
+
+            <p class="mt-4 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
+                Your factory will be verified by admin after submission. You'll receive notification once approved.
+            </p>
+        </div>
+        <p class="mt-5 text-center text-sm text-muted-foreground">
+            Already have an account? <a href="{{ url_for('auth.login', as='manager') }}" class="font-semibold text-primary hover:underline">Log in</a>
+        </p>
+        <p class="mt-2 text-center text-sm text-muted-foreground">
+            <a href="{{ url_for('auth.register_laborer') }}" class="font-semibold text-primary hover:underline">Register as Worker instead</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

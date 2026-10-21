@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#059669">
+    <meta name="color-scheme" content="light">
+    <title>{% block title %}ShramLink — Daily Work, Fair Pay / रोज़ का काम{% endblock %}</title>
+    <meta name="description" content="Lightweight labor marketplace connecting daily-wage workers with verified factories across India. Voice registration, upfront escrow wages, UPI payouts.">
+    <link rel="icon" href="{{ url_for('static', filename='images/icon-light-32x32.png') }}" media="(prefers-color-scheme: light)">
+    <link rel="icon" href="{{ url_for('static', filename='images/icon-dark-32x32.png') }}" media="(prefers-color-scheme: dark)">
+    <link rel="icon" href="{{ url_for('static', filename='images/icon.svg') }}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-icon.png') }}">
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#059669',
+                        'primary-foreground': '#ffffff',
+                        manager: '#2563eb',
+                        'manager-foreground': '#ffffff',
+                        'manager-soft': '#eff6ff',
+                        warning: '#b45309',
+                        'warning-soft': '#fffbeb',
+                        accent: '#ecfdf5',
+                        'accent-foreground': '#065f46',
+                        destructive: '#dc2626',
+                        background: '#f9fafb',
+                        foreground: '#111827',
+                        card: '#ffffff',
+                        'card-foreground': '#111827',
+                        muted: '#f3f4f6',
+                        'muted-foreground': '#4b5563',
+                        border: '#e5e7eb',
+                        input: '#d1d5db',
+                        ring: '#059669',
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="font-sans antialiased bg-background text-foreground">
+    {% block content %}{% endblock %}
+    
+    <script>
+        lucide.createIcons();
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
