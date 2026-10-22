@@ -1,239 +1,174 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_user, logout_user, current_user, login_required
-from app.models import db, User, UserRole
+import re
+import uuid
+
+from flask import (
+    Blueprint,
+    abort,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
+from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
+from werkzeug.security import check_password_hash
 
-auth_bp = Blueprint('auth', __name__)
+from app import validation
+from app.models import User, UserRole, db
+from app.security import login_limited, record_failure
 
-@auth_bp.route('/login', methods=['GET', 'POST'])
+auth_bp = Blueprint("auth", __name__)
+
+
+def sign_in(user):
+    session.clear()
+    login_user(user, remember=False, fresh=True)
+    session.permanent = True
+
+
+@auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard.index'))
-    
-    if request.method == 'POST':
-        role = request.form.get('role', 'laborer')
-        
-        if role == 'laborer':
-            phone = request.form.get('phone', '').replace(' ', '').replace('-', '')
-            otp = request.form.get('otp', '')
-            
-            if len(phone) != 10 or not phone.isdigit():
-                flash('Mobile number needs 10 digits.', 'error')
-                return render_template('login.html', role=role, phone=phone)
-            
-            # For demo: OTP is always 1234. In production, verify OTP sent via SMS
-            if otp != '1234':
-                flash('Invalid OTP. For demo, use 1234.', 'error')
-                return render_template('login.html', role=role, phone=phone)
-            
-            # Find or create user
-            user = User.query.filter_by(phone=phone).first()
-            if not user:
-                # Create new laborer user
-                user = User(
-                    phone=phone,
-                    email=f'{phone}@shramlink.local',  # placeholder email
-                    password_hash='',  # No password for OTP users
-                    role=UserRole.LABORER,
-                    name=f'Worker {phone[-4:]}',
-                    is_verified=True
-                )
-                user.set_password('otp_login')  # dummy password
-                db.session.add(user)
-                db.session.commit()
-            
-            if user.role != UserRole.LABORER:
-                flash('This account is not registered as a worker.', 'error')
-                return render_template('login.html', role=role, phone=phone)
-            
-            login_user(user, remember=True)
-            flash(f'Welcome back, {user.name}!', 'success')
-            return redirect(url_for('dashboard.index'))
-        
-        else:  # manager
-            email = request.form.get('email', '').strip().lower()
-            password = request.form.get('password', '')
-            
-            if '@' not in email:
-                flash('Enter your factory email address.', 'error')
-                return render_template('login.html', role=role, email=email)
-            
-            user = User.query.filter_by(email=email).first()
-            
-            if not user or not user.check_password(password):
-                flash('Invalid email or password.', 'error')
-                return render_template('login.html', role=role, email=email)
-            
-            if user.role != UserRole.MANAGER:
-                flash('This account is not registered as a factory manager.', 'error')
-                return render_template('login.html', role=role, email=email)
-            
-            if not user.is_active:
-                flash('Your account has been deactivated. Contact support.', 'error')
-                return render_template('login.html', role=role, email=email)
-            
-            login_user(user, remember=True)
-            flash(f'Welcome back, {user.factory_name or user.name}!', 'success')
-            return redirect(url_for('dashboard.index'))
-    
-    role = request.args.get('as', 'laborer')
-    return render_template('login.html', role=role)
+        return redirect(url_for("dashboard.index"))
+    errors = {}
+    if request.method == "POST":
+        identifier = request.form.get("identifier", "").strip().lower()[:120]
+        password = request.form.get("password", "")
+        if login_limited(identifier):
+            abort(429)
+        user = User.query.filter(
+            or_(User.phone == identifier, User.email == identifier)
+        ).first()
+        candidate = (
+            user.password_hash
+            if user and user.password_hash
+            else current_app.config["DUMMY_PASSWORD_HASH"]
+        )
+        valid_password = check_password_hash(candidate, password[:128])
+        if (
+            not user
+            or not valid_password
+            or len(password) > 128
+            or not user.is_active
+            or user.credential_version < 2
+        ):
+            record_failure(identifier)
+            errors["login"] = (
+                "मोबाइल / ईमेल या पासवर्ड सही नहीं है / Incorrect login details."
+            )
+        else:
+            sign_in(user)
+            return redirect(url_for("dashboard.index"))
+    return render_template("login.html", errors=errors, values=request.form), (
+        400 if errors else 200
+    )
 
-@auth_bp.route('/register/laborer', methods=['GET', 'POST'])
+
+@auth_bp.route("/register/laborer", methods=["GET", "POST"])
 def register_laborer():
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard.index'))
-    
-    if request.method == 'POST':
-        phone = request.form.get('phone', '').replace(' ', '').replace('-', '')
-        otp = request.form.get('otp', '')
-        name = request.form.get('name', '').strip()
-        age = request.form.get('age', '')
-        skills = request.form.getlist('skills')
-        upi_id = request.form.get('upi_id', '').strip()
-        eshram = request.form.get('eshram', '').strip()
-        
-        if len(phone) != 10 or not phone.isdigit():
-            flash('Mobile number needs 10 digits.', 'error')
-            return render_template('register_laborer.html')
-        
-        if otp != '1234':
-            flash('Invalid OTP. For demo, use 1234.', 'error')
-            return render_template('register_laborer.html')
-        
-        if not name:
-            flash('Name is required.', 'error')
-            return render_template('register_laborer.html')
-        
-        if User.query.filter_by(phone=phone).first():
-            flash('This phone number is already registered.', 'error')
-            return render_template('register_laborer.html')
-        
-        user = User(
-            phone=phone,
-            email=f'{phone}@shramlink.local',
-            role=UserRole.LABORER,
-            name=name,
-            age=int(age) if age.isdigit() else None,
-            upi_id=upi_id,
-            eshram_number=eshram,
-            is_verified=True
-        )
-        user.set_skills_list(skills)
-        user.set_password('otp_login')
-        db.session.add(user)
-        db.session.commit()
-        
-        login_user(user, remember=True)
-        flash('Registration successful!', 'success')
-        return redirect(url_for('dashboard.index'))
-    
-    return render_template('register_laborer.html')
+        return redirect(url_for("dashboard.index"))
+    errors = {}
+    if request.method == "POST":
+        phone = validation.phone_number(request.form, errors)
+        password = validation.password(request.form, errors)
+        if not errors:
+            if login_limited("register:" + phone):
+                abort(429)
+            record_failure(
+                "register:" + phone
+            )  # Bound account creation per IP as well.
+            user = User(
+                phone=phone,
+                email=uuid.uuid4().hex + "@accounts.invalid",
+                role=UserRole.LABORER,
+                name="नया श्रमिक",
+                is_verified=False,
+                profile_complete=False,
+                credential_version=2,
+            )
+            user.set_password(password)
+            db.session.add(user)
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                errors["phone"] = (
+                    "इस नंबर से खाता नहीं बन सका। पहले खाता बनाया हो तो लॉग इन करें / Try logging in if already registered."
+                )
+            else:
+                sign_in(user)
+                return redirect(url_for("dashboard.onboarding"))
+    return render_template(
+        "register_laborer.html", errors=errors, values=request.form
+    ), (400 if errors else 200)
 
-@auth_bp.route('/register/manager', methods=['GET', 'POST'])
+
+@auth_bp.route("/register/manager", methods=["GET", "POST"])
 def register_manager():
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard.index'))
-    
-    if request.method == 'POST':
-        email = request.form.get('email', '').strip().lower()
-        password = request.form.get('password', '')
-        confirm_password = request.form.get('confirm_password', '')
-        factory_name = request.form.get('factory_name', '').strip()
-        factory_address = request.form.get('factory_address', '').strip()
-        gstin = request.form.get('gstin', '').strip().upper()
-        pan = request.form.get('pan', '').strip().upper()
-        
-        if '@' not in email:
-            flash('Enter a valid email address.', 'error')
-            return render_template('register_manager.html')
-        
-        if len(password) < 6:
-            flash('Password must be at least 6 characters.', 'error')
-            return render_template('register_manager.html')
-        
-        if password != confirm_password:
-            flash('Passwords do not match.', 'error')
-            return render_template('register_manager.html')
-        
-        if not factory_name:
-            flash('Factory name is required.', 'error')
-            return render_template('register_manager.html')
-        
-        if not gstin:
-            flash('GSTIN is required for verification.', 'error')
-            return render_template('register_manager.html')
-        
-        if User.query.filter_by(email=email).first():
-            flash('This email is already registered.', 'error')
-            return render_template('register_manager.html')
-        
-        if User.query.filter_by(gstin=gstin).first():
-            flash('This GSTIN is already registered.', 'error')
-            return render_template('register_manager.html')
-        
-        user = User(
-            email=email,
-            role=UserRole.MANAGER,
-            name=factory_name,
-            factory_name=factory_name,
-            factory_address=factory_address,
-            gstin=gstin,
-            pan_number=pan,
-            is_verified=False  # Requires admin approval
+        return redirect(url_for("dashboard.index"))
+    errors = {}
+    if request.method == "POST":
+        email = validation.text(request.form, "email", 120, errors).lower()
+        if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email) or email.endswith(
+            "@accounts.invalid"
+        ):
+            errors["email"] = "Enter a valid work email address."
+        password = validation.password(request.form, errors)
+        name = validation.text(request.form, "name", 100, errors, minimum=2)
+        factory_name = validation.text(
+            request.form, "factory_name", 200, errors, minimum=2
         )
-        user.set_password(password)
-        db.session.add(user)
-        db.session.commit()
-        
-        # Create verification request
-        from app.models import VerificationRequest
-        vr = VerificationRequest(
-            entity_type='factory',
-            entity_name=factory_name,
-            owner_name=factory_name,  # Use factory name as owner name for now
-            gstin=gstin,
-            city=factory_address,
-            documents=json.dumps([])
+        address = validation.text(
+            request.form, "factory_address", 200, errors, minimum=5
         )
-        db.session.add(vr)
-        db.session.commit()
-        
-        flash('Registration submitted! Your factory will be verified by admin.', 'success')
-        return redirect(url_for('auth.login'))
-    
-    return render_template('register_manager.html')
+        if not errors:
+            if login_limited("register:" + email):
+                abort(429)
+            record_failure("register:" + email)
+            user = User(
+                email=email,
+                name=name,
+                role=UserRole.MANAGER,
+                factory_name=factory_name,
+                factory_address=address,
+                is_verified=False,
+                credential_version=2,
+            )
+            user.set_password(password)
+            db.session.add(user)
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                errors["email"] = (
+                    "Could not register this email. Log in if you already have an account."
+                )
+            else:
+                sign_in(user)
+                flash(
+                    "Factory account created. Details are self-reported; you can now post a vacancy.",
+                    "success",
+                )
+                return redirect(url_for("dashboard.manager_dashboard"))
+    return render_template(
+        "register_manager.html", errors=errors, values=request.form
+    ), (400 if errors else 200)
 
-@auth_bp.route('/admin-login', methods=['GET', 'POST'])
+
+@auth_bp.route("/admin-login")
 def admin_login():
-    if current_user.is_authenticated:
-        if current_user.role == UserRole.ADMIN:
-            return redirect(url_for('admin.index'))
-        return redirect(url_for('dashboard.index'))
-    
-    if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '')
-        
-        user = User.query.filter(
-            or_(User.email == username, User.phone == username),
-            User.role == UserRole.ADMIN
-        ).first()
-        
-        if user and user.check_password(password):
-            login_user(user, remember=True)
-            flash('Logged in as admin.', 'success')
-            return redirect(url_for('admin.index'))
-        
-        flash('Invalid admin credentials.', 'error')
-    
-    return render_template('admin_login.html')
+    return redirect(url_for("auth.login"))
 
-@auth_bp.route('/logout', methods=['POST'])
+
+@auth_bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
     logout_user()
-    flash('Logged out successfully.', 'success')
-    return redirect(url_for('main.index'))
-
-import json
+    session.clear()
+    return redirect(url_for("main.index"))

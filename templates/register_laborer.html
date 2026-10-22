@@ -1,118 +1,19 @@
-{% extends 'base.html' %}
-
-{% block title %}Register as Worker — ShramLink{% endblock %}
-
-{% block content %}
-<div class="grid min-h-dvh place-items-center bg-background px-4 py-10">
-    <div class="w-full max-w-md">
-        <div class="mb-6 flex justify-center">
-            <a href="/" class="flex items-center gap-2" aria-label="ShramLink home">
-                <span class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                    <i data-lucide="hard-hat" class="size-5"></i>
-                </span>
-                <span class="text-lg font-extrabold tracking-tight text-foreground">Shram<span class="text-primary">Link</span></span>
-            </a>
-        </div>
-        <div class="rounded-2xl border border-border bg-card p-6 shadow-sm">
-            <h1 class="text-2xl font-extrabold text-foreground">Register as Worker</h1>
-            <p class="mt-1 text-sm text-muted-foreground">मज़दूर के रूप में पंजीकरण करें</p>
-
-            <form method="POST" class="mt-5 space-y-4" novalidate>
-                <label class="block text-sm font-bold text-foreground">
-                    Mobile Number
-                    <input name="phone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel"
-                           class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-                           placeholder="98765 43210" required>
-                </label>
-                
-                <label class="block text-sm font-bold text-foreground">
-                    OTP
-                    <input name="otp" type="text" inputmode="numeric" maxlength="4" autocomplete="off"
-                           class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-                           placeholder="4-digit code" required>
-                </label>
-                
-                <label class="block text-sm font-bold text-foreground">
-                    Full Name
-                    <input name="name" type="text" autocomplete="name"
-                           class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-                           placeholder="Ramesh Kumar" required>
-                </label>
-                
-                <label class="block text-sm font-bold text-foreground">
-                    Age
-                    <input name="age" type="number" inputmode="numeric" min="18" max="65"
-                           class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-                           placeholder="32">
-                </label>
-                
-                <label class="block text-sm font-bold text-foreground">
-                    Skills (select all that apply)
-                    <div class="mt-2 flex flex-wrap gap-2">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="skills" value="welder" class="size-4 accent-primary">
-                            <span class="text-sm">Welder / वेल्डर</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="skills" value="construction" class="size-4 accent-primary">
-                            <span class="text-sm">Construction / निर्माण</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="skills" value="loader" class="size-4 accent-primary">
-                            <span class="text-sm">Loader / लोडर</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="skills" value="electrician" class="size-4 accent-primary">
-                            <span class="text-sm">Electrician / बिजली</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="skills" value="painter" class="size-4 accent-primary">
-                            <span class="text-sm">Painter / पेंटर</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="skills" value="helper" class="size-4 accent-primary">
-                            <span class="text-sm">Helper / हेल्पर</span>
-                        </label>
-                    </div>
-                </label>
-                
-                <label class="block text-sm font-bold text-foreground">
-                    UPI ID (optional)
-                    <input name="upi_id" type="text" inputmode="email" autocomplete="off"
-                           class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-                           placeholder="ramesh@upi">
-                </label>
-                
-                <label class="block text-sm font-bold text-foreground">
-                    e-Shram Card Number (optional)
-                    <input name="eshram" type="text" inputmode="numeric"
-                           class="mt-1.5 h-12 w-full rounded-lg border border-input bg-card px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-                           placeholder="12-digit UAN">
-                </label>
-
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <p role="alert" class="text-sm font-semibold {% if category == 'error' %}text-destructive{% else %}text-primary{% endif %}">{{ message }}</p>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-
-                <button type="submit" class="h-12 w-full rounded-lg text-base font-bold bg-primary text-primary-foreground hover:bg-primary/90">
-                    Register
-                </button>
-            </form>
-
-            <p class="mt-4 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-                Demo: Use OTP <strong>1234</strong> for any 10-digit mobile number.
-            </p>
-        </div>
-        <p class="mt-5 text-center text-sm text-muted-foreground">
-            Already have an account? <a href="{{ url_for('auth.login', as='laborer') }}" class="font-semibold text-primary hover:underline">Log in</a>
-        </p>
-        <p class="mt-2 text-center text-sm text-muted-foreground">
-            <a href="{{ url_for('auth.register_manager') }}" class="font-semibold text-manager hover:underline">Register as Factory Manager instead</a>
-        </p>
-    </div>
+{% extends "base.html" %}{% from '_forms.html' import input, errors_summary %}
+{% block title %}श्रमिक खाता बनाएँ · ShramLink{% endblock %}
+{% block content %}<section class="container auth-grid section"><aside class="auth-story"><p class="eyebrow teal">श्रमिक / WORKER</p><h1>आपके हुनर को<br>मिले सही मौका।</h1><p>पहले अपना खाता बनाएँ। फिर हिंदी में बोलकर या टाइप करके अपनी प्रोफ़ाइल पूरी करें।</p><ol class="simple-steps"><li class="current">खाता बनाएँ</li><li>अपना परिचय दें</li><li>काम देखें और आवेदन करें</li></ol><p class="small-text">मोबाइल नंबर लॉग इन के लिए है। इस MVP में SMS या OTP सत्यापन नहीं है। पासवर्ड बोलकर न बताएँ।</p></aside>
+<div class="panel">
+    <p class="eyebrow teal">कदम 1 / 2</p>
+    <h2>नया खाता बनाएँ</h2>
+    <p class="muted">पहले से खाता है? <a href="{{ url_for('auth.login') }}">लॉग इन करें</a></p>
+    {{ errors_summary(errors) }}
+    <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {{ input('phone','मोबाइल नंबर / Mobile number',values,errors,type='tel',maxlength=10,autocomplete='tel',hint='10 अंक, बिना +91 के') }}
+        {{ input('password','पासवर्ड / Password',values,errors,type='password',maxlength=128,autocomplete='new-password',hint='कम से कम 10 अक्षर। ऐसा पासवर्ड रखें जो याद रहे।') }}
+        {{ input('confirm_password','पासवर्ड फिर लिखें / Confirm password',values,errors,type='password',maxlength=128,autocomplete='new-password') }}
+        <button type="submit"
+                class="button primary full">खाता बनाएँ और आगे बढ़ें <span aria-hidden="true">→</span></button>
+    </form>
 </div>
+</section>
 {% endblock %}
