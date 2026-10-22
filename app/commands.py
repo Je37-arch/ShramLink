@@ -12,6 +12,7 @@ ADDITIONS = {
     "users": {
         "preferred_domain": "VARCHAR(40)",
         "experience_years": "INTEGER",
+        "experience_months": "INTEGER",
         "location": "VARCHAR(100)",
         "profile_complete": "BOOLEAN NOT NULL DEFAULT 0",
         # Existing passwords / legacy OTP accounts must be reset before logging in.
@@ -21,6 +22,7 @@ ADDITIONS = {
     "jobs": {
         "domain": "VARCHAR(40)",
         "min_experience": "INTEGER NOT NULL DEFAULT 0",
+        "min_experience_months": "INTEGER",
         "worksite_address": "VARCHAR(200)",
     },
 }
@@ -38,6 +40,19 @@ def init_database():
                     connection.execute(
                         text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}")
                     )
+        # Backfill only missing months; repeat runs never round away V2 precision.
+        connection.execute(
+            text(
+                "UPDATE users SET experience_months = experience_years * 12 "
+                "WHERE experience_months IS NULL AND experience_years BETWEEN 0 AND 62"
+            )
+        )
+        connection.execute(
+            text(
+                "UPDATE jobs SET min_experience_months = min_experience * 12 "
+                "WHERE min_experience_months IS NULL AND min_experience BETWEEN 0 AND 62"
+            )
+        )
 
 
 def register_commands(app):
@@ -85,6 +100,7 @@ def register_commands(app):
                     user.location = "Delhi"
                     user.preferred_domain = "manufacturing"
                     user.experience_years = 3
+                    user.experience_months = 36
                     user.profile_complete = True
                 else:
                     user.factory_name = "Demo Factory — demonstration only"
@@ -110,6 +126,7 @@ def register_commands(app):
                     status=JobStatus.ACTIVE,
                     description="Demo vacancy. Arc welding and safety equipment experience.",
                     min_experience=1,
+                    min_experience_months=12,
                     verified_only=False,
                     manager_id=users[1].id,
                 )

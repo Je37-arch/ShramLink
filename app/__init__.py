@@ -10,6 +10,7 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.security import generate_password_hash
 
 from app.catalog import DOMAINS, LOCATIONS, SKILLS, STATUS_LABELS
+from app.experience import experience_label
 from app.models import db, login_manager
 from app.timeutils import india_date, localdate
 
@@ -63,6 +64,7 @@ def create_app(test_config=None):
     login_manager.init_app(app)
     csrf.init_app(app)
     app.jinja_env.filters["india_date"] = india_date
+    app.jinja_env.filters["experience"] = experience_label
     app.config["DUMMY_PASSWORD_HASH"] = generate_password_hash(
         secrets.token_urlsafe(32)
     )

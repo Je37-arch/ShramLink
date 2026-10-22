@@ -41,3 +41,104 @@ test("Name cleanup and e-Shram require explicit valid values", () => {
     ["eshram_number"],
   );
 });
+
+const L = require("../static/js/profile-language.js");
+const { direction } = require("../static/js/discovery.js");
+for (const [input, months] of [
+  ["6 mahine", 6],
+  ["1 saal", 12],
+  ["1 saal 3 mahine", 15],
+  ["ek saal paanch mahine", 17],
+  ["dedh saal", 18],
+  ["1 saal 11 mahine", 23],
+  ["2 saal", 24],
+  ["2 saal 8 mahine", 32],
+  ["3 saal 6 mahine", 42],
+  ["मुझे डेढ़ साल का अनुभव है", 18],
+  ["दो साल और आठ महीने", 32],
+  ["शून्य", 0],
+]) {
+  test(`exact months: ${input}`, () => assert.equal(L.duration(input), months));
+}
+test("ambiguous experience never becomes zero", () => {
+  for (const input of [
+    "लगभग दो साल",
+    "2",
+    "दो या तीन साल",
+    "6 weeks",
+    "2 saal extra",
+    "2 saal 1 saal",
+    "-3 mahine",
+    "1.3 saal",
+    "1 saal aur",
+    "पता नहीं",
+  ])
+    assert.equal(L.duration(input), null, input);
+});
+test("display policy keeps stored precision", () => {
+  assert.equal(L.displayMonths(23), "23 महीने");
+  assert.equal(L.displayMonths(32), "2 वर्ष");
+  assert.equal(L.displayMonths(42), "3 वर्ष");
+});
+test("natural phrases and ambiguity respect vocabulary", () => {
+  assert.equal(L.parse("name", "जी, रमेश कुमार"), "रमेश कुमार");
+  assert.equal(L.parse("name", "mera naam Ramesh Kumar hai"), "Ramesh Kumar");
+  assert.equal(L.parse("age", "मैं पच्चीस साल का हूँ"), 25);
+  assert.equal(L.parse("age", "main pachis saal ka hoon"), 25);
+  assert.equal(
+    L.parse("location", "मैं नोएडा में काम करना चाहता हूँ"),
+    "Noida",
+  );
+  assert.equal(L.parse("location", "दिल्ली और नोएडा"), null);
+  assert.equal(L.parse("preferred_domain", "कारखाना या गोदाम"), null);
+  assert.deepEqual(L.parse("skills", "वेल्डिंग नहीं आती है"), []);
+  assert.equal(L.parse("name", "12345"), null);
+});
+test("natural commands are context signals, not profile values", () => {
+  for (const [value, expected] of [
+    ["जी हाँ", "yes"],
+    ["सही है", "yes"],
+    ["नहीं", "no"],
+    ["गलत है", "no"],
+    ["दोबारा पूछो", "repeat"],
+    ["फिर से बोलो", "repeat"],
+    ["पिछला सवाल", "back"],
+    ["रुको", "stop"],
+    ["बंद करो", "stop"],
+    ["आगे बढ़ो", "next"],
+    ["छोड़ दो", "skip"],
+    ["सेव कर दो", "save"],
+    ["मेरे पास ई-श्रम नंबर नहीं है", "skip"],
+  ])
+    assert.equal(L.command(value), expected);
+  assert.deepEqual(L.correction("नहीं, मेरा नाम सुरेश है"), {
+    key: "name",
+    value: "सुरेश",
+  });
+  assert.deepEqual(L.correction("मेरा नाम बदलो"), { key: "name", value: null });
+});
+for (const [dx, dy, ms, result] of [
+  [0, -100, 200, "up"],
+  [0, 100, 200, "down"],
+  [-100, 0, 200, "left"],
+  [100, 0, 200, "right"],
+  [20, 0, 200, null],
+  [100, 90, 200, null],
+  [100, 0, 2000, null],
+  [100, 0, 10, null],
+])
+  test(`gesture intent ${dx}/${dy}/${ms}`, () =>
+    assert.equal(direction(dx, dy, ms), result));
+test("common Hinglish and uncertain names are not silently guessed", () => {
+  assert.deepEqual(L.parse("skills", "mujhe bijli ka kaam aata hai"), [
+    "electrician",
+  ]);
+  assert.equal(
+    L.parse("preferred_domain", "main godam mein kaam chahta hoon"),
+    "warehouse",
+  );
+  assert.equal(L.parse("location", "dilli mein"), "Delhi");
+  assert.equal(L.duration("120 mahine"), 120);
+  assert.equal(L.parse("name", "मुझे नहीं पता"), null);
+  assert.equal(L.parse("name", "पता नहीं"), null);
+});

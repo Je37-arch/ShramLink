@@ -1314,3 +1314,434 @@ progress::-webkit-progress-value {
     transition: none !important;
   }
 }
+/* V2: clear worker actions, speech state and a deliberately confined gesture area. */
+.find-work-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 38px;
+  border-radius: 20px;
+  margin: 30px 0;
+}
+.find-work-panel h2 {
+  font-size: 2.2rem;
+  margin: 8px 0;
+}
+.find-work-panel .tag {
+  background: #173e49;
+  color: #d2f8f1;
+}
+.audio-settings {
+  padding: 16px;
+  border: 1px solid #cbd9dc;
+  border-radius: 12px;
+  margin-bottom: 22px;
+  background: #f5f9f8;
+}
+.audio-settings summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 700;
+}
+.audio-settings .actions {
+  margin-top: 12px;
+}
+.audio-settings p {
+  font-size: 1rem;
+  line-height: 1.65;
+}
+.voice-tools {
+  margin: 18px 0;
+}
+.sticky-tools {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  padding: 10px 0;
+  z-index: 3;
+  border-bottom: 1px solid #d6e2e3;
+}
+#voice-state[data-state="listening"] {
+  background: #d3f4ed;
+  color: #08544c;
+  border: 2px solid #08776b;
+}
+#voice-state[data-state="speaking"] {
+  background: #e8eef5;
+  color: #123249;
+  border: 2px solid #123249;
+}
+#voice-state[data-state="paused"] {
+  background: #fff0ce;
+  color: #664600;
+}
+#voice-status {
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.7;
+}
+.onboarding-v2 .onboard-guide {
+  align-self: start;
+}
+.onboarding-v2 .onboard-guide .small-text {
+  font-size: 0.95rem;
+}
+.discovery-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+  gap: 28px;
+  align-items: start;
+  max-width: 1100px;
+  margin: auto;
+}
+.discovery-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  max-width: 1100px;
+  margin: auto;
+}
+#discovery-status {
+  max-width: 1100px;
+  margin: 20px auto;
+  min-height: 32px;
+  font-weight: 600;
+}
+.discovery-card {
+  border: 2px solid #c0dcda;
+  box-shadow: 0 10px 30px #102b390a;
+}
+.discovery-card h2 {
+  font-size: 1.8rem;
+  line-height: 1.4;
+  margin: 16px 0 8px;
+  overflow-wrap: anywhere;
+}
+.discovery-card .wage {
+  margin: 20px 0 8px;
+}
+.discovery-card .wage > span:first-child {
+  font-size: 2.65rem;
+  font-weight: 800;
+  color: #0b4b43;
+}
+.job-city {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.discovery-card .job-details {
+  margin: 16px 0;
+}
+.discovery-card details {
+  margin: 16px 0;
+}
+.discovery-card details summary {
+  padding: 12px 0;
+  min-height: 48px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.discovery-card details p {
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.discovery-card .job-details dd {
+  overflow-wrap: anywhere;
+}
+.job-primary-actions,
+.stack-navigation {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+.job-primary-actions .button {
+  padding: 16px 10px;
+}
+.discovery-aside .panel {
+  margin-bottom: 22px;
+}
+.discovery-aside form select {
+  margin-bottom: 18px;
+}
+.swipe-pad {
+  touch-action: none;
+  user-select: none;
+  border: 2px dashed #94bcb7;
+  border-radius: 14px;
+  background: #edf8f5;
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  text-align: center;
+  gap: 6px;
+}
+.swipe-pad > span:first-child {
+  font-size: 1.7rem;
+  letter-spacing: 0.35em;
+}
+.swipe-pad > span:last-child {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.swipe-pad:focus-visible {
+  outline: 3px solid #075e56;
+  outline-offset: 4px;
+}
+.stack-navigation {
+  margin-bottom: 28px;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+dialog {
+  border: 1px solid #b3cdca;
+  border-radius: 18px;
+  padding: 28px;
+  max-width: 560px;
+  width: calc(100% - 32px);
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  color: #102b39;
+  background: #fff;
+}
+dialog::backdrop {
+  background: #071e2aba;
+}
+dialog h2 {
+  font-size: 1.6rem;
+  line-height: 1.5;
+}
+dialog p {
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+dialog .actions {
+  margin-top: 22px;
+}
+#apply-error {
+  color: #9b202a;
+  font-weight: 600;
+}
+.practice-card {
+  min-height: 185px;
+  margin: 20px 0;
+  overflow: hidden;
+}
+.practice-arrow {
+  font-size: 3rem !important;
+  letter-spacing: 0 !important;
+  animation: practice-up 1.8s ease-in-out infinite;
+}
+.practice-card[data-direction="down"] .practice-arrow {
+  animation-name: practice-down;
+}
+.practice-card[data-direction="left"] .practice-arrow {
+  animation-name: practice-left;
+}
+.practice-card[data-direction="right"] .practice-arrow {
+  animation-name: practice-right;
+}
+.practice-card[data-direction="buttons"] .practice-arrow {
+  animation: none;
+}
+@keyframes practice-up {
+  0%,
+  100% {
+    transform: translateY(8px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+@keyframes practice-down {
+  0%,
+  100% {
+    transform: translateY(-12px);
+  }
+  50% {
+    transform: translateY(8px);
+  }
+}
+@keyframes practice-left {
+  0%,
+  100% {
+    transform: translateX(18px);
+  }
+  50% {
+    transform: translateX(-18px);
+  }
+}
+@keyframes practice-right {
+  0%,
+  100% {
+    transform: translateX(-18px);
+  }
+  50% {
+    transform: translateX(18px);
+  }
+}
+@media (max-width: 760px) {
+  .find-work-panel {
+    display: block;
+    padding: 26px;
+  }
+  .find-work-panel > .button {
+    margin-top: 22px;
+    display: flex;
+  }
+  .discovery-layout {
+    grid-template-columns: 1fr;
+  }
+  .discovery-toolbar > .button {
+    flex: 1;
+    min-width: 140px;
+  }
+  .discovery-card {
+    padding: 20px;
+  }
+  .discovery-card h2 {
+    font-size: 1.55rem;
+  }
+  .discovery-card .wage > span:first-child {
+    font-size: 2.3rem;
+  }
+  .job-primary-actions {
+    gap: 8px;
+  }
+  .job-primary-actions .button {
+    font-size: 0.95rem;
+  }
+  .sticky-tools {
+    gap: 8px;
+  }
+  .sticky-tools > .button {
+    padding: 10px;
+    flex: 1;
+    min-width: 95px;
+    font-size: 0.95rem;
+  }
+  dialog {
+    padding: 22px;
+  }
+  dialog .actions > .button {
+    width: 100%;
+  }
+  .onboarding-v2 .onboard-guide {
+    padding: 24px;
+  }
+  .onboarding-v2 .onboard-guide h2 {
+    font-size: 1.8rem;
+  }
+  .audio-settings {
+    padding: 12px;
+  }
+  .audio-settings select {
+    max-width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* Keep the next card's essential details close to its actions. */
+.discovery-card {
+  display: block;
+}
+.discovery-card .card-top {
+  margin-bottom: 8px;
+}
+.discovery-card .wage {
+  margin: 12px 0 4px;
+}
+.discovery-card .job-city {
+  margin: 6px 0 14px;
+}
+.discovery-card .job-details {
+  margin: 16px 0;
+}
+.discovery-card .notice {
+  margin: 12px 0;
+}
+.discovery-card .swipe-pad {
+  min-height: 112px;
+}
+.discovery-card > details {
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+.js-audio {
+  display: none;
+}
+.js-ready .js-audio {
+  display: block;
+}
+@media (max-width: 760px) {
+  .discovery.section {
+    padding-top: 24px;
+  }
+  .discovery .page-heading {
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .discovery .page-heading h1 {
+    font-size: 1.65rem;
+  }
+  .discovery .page-heading .eyebrow {
+    display: none;
+  }
+  .discovery .page-heading > .button {
+    padding: 10px 16px;
+  }
+  .discovery-toolbar {
+    gap: 8px;
+  }
+  .discovery-toolbar .button {
+    font-size: 0.95rem;
+    padding: 10px 12px;
+  }
+  #discovery-status {
+    margin: 12px 0;
+    min-height: 24px;
+    font-size: 0.95rem;
+  }
+  .discovery-card .wage > span:first-child {
+    font-size: 2.2rem;
+  }
+  .discovery-card h2 {
+    margin: 10px 0 6px;
+  }
+  .discovery-card .job-details {
+    font-size: 1rem;
+  }
+  .discovery-card .swipe-pad {
+    padding: 10px;
+    min-height: 100px;
+  }
+  .voice-active .sticky-tools {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    margin: 0;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    box-shadow: 0 -4px 20px #102b391a;
+    border-top: 1px solid #bed4d2;
+    z-index: 8;
+  }
+  .voice-active {
+    padding-bottom: 88px;
+  }
+}

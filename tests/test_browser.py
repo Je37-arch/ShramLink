@@ -6,35 +6,15 @@ Run: python -m playwright install chromium --only-shell
 
 from datetime import date, timedelta
 from pathlib import Path
-from threading import Thread
 
 import pytest
 from conftest import TEST_PASSWORD, account
-from playwright.sync_api import expect, sync_playwright
-from werkzeug.serving import make_server
+from playwright.sync_api import expect
 
 from app.models import UserRole
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "test-results"
-
-
-@pytest.fixture(scope="module")
-def browser():
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True, args=["--no-sandbox"])
-        yield browser
-        browser.close()
-
-
-@pytest.fixture
-def live(app):
-    server = make_server("127.0.0.1", 0, app, threaded=True)
-    thread = Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    yield f"http://127.0.0.1:{server.server_port}"
-    server.shutdown()
-    thread.join(timeout=5)
 
 
 def layout(page):
@@ -48,7 +28,7 @@ def fill_profile(page, name="परीक्षण श्रमिक"):
     page.locator("#age").fill("26")
     page.locator("input[name=skills][value=welder]").check()
     page.locator("#preferred_domain").select_option("manufacturing")
-    page.locator("#experience_years").fill("3")
+    page.locator("#experience_months").fill("36")
     page.locator("#location").select_option("Delhi")
     page.locator("#confirmed").check()
 
@@ -72,7 +52,7 @@ def worker_page(app, browser, live, mock=False, **options):
 
 
 def say(page, text):
-    page.locator("#listen").click()
+    expect(page.locator("#voice-state")).to_have_attribute("data-state", "listening")
     page.evaluate("(text)=>window.__speech.result(text)", text)
 
 
@@ -127,7 +107,7 @@ def test_mobile_typed_recruitment_journey(app, browser, live):
         worksite_address="Demo industrial area, Delhi",
         wage="850",
         workers="1",
-        min_experience="1",
+        min_experience_months="12",
         start_date=(date.today() + timedelta(days=1)).isoformat(),
         shift="09:00–17:00",
         requirements="Arc welding; safety equipment provided.",
@@ -141,7 +121,12 @@ def test_mobile_typed_recruitment_journey(app, browser, live):
     layout(employer)
     expect(employer.get_by_text("No applicants in this view yet.")).to_be_visible()
     worker.reload()
-    worker.get_by_role("button", name="इस काम के लिए आवेदन करें").click()
+    worker.get_by_role("link", name="⌕ काम खोजें →").click()
+    worker.locator("#tutorial-skip").click()
+    worker.locator("#apply-job").click()
+    worker.locator("#confirm-apply").click()
+    expect(worker.locator("#discovery-status")).to_contain_text("आवेदन भेज दिया")
+    worker.get_by_role("link", name="मेरे आवेदन →").click()
     expect(worker.locator("#applications .status")).to_contain_text("Applied")
     employer.reload()
     employer.get_by_role("button", name="Select worker").click()
@@ -162,42 +147,47 @@ def test_mobile_typed_recruitment_journey(app, browser, live):
     worker_context.close()
 
 
+def start_voice(page):
+    page.locator("#start-voice").click()
+    say(page, "जी हाँ")  # Audio preflight, then no further button taps.
+
+
 def test_mocked_hindi_voice_all_questions_correction_repeat_skip_save(
     app, browser, live
 ):
     context, page = worker_page(app, browser, live, mock=True)
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
-    page.locator("#start-voice").click()
+    start_voice(page)
     say(page, "मेरा नाम गलत नाम है")
-    say(page, "मेरा नाम परीक्षण श्रमिक है")
+    say(page, "नहीं, मेरा नाम परीक्षण श्रमिक है")
     expect(page.locator("#name")).to_have_value("परीक्षण श्रमिक")
-    say(page, "दोहराएँ")
-    say(page, "हाँ")
-    expect(page.locator("#age")).to_be_visible()
-    say(page, "पच्चीस")
-    say(page, "हाँ")
-    say(page, "वेल्डर और हेल्पर")
-    say(page, "हाँ")
+    say(page, "दोबारा पूछो")
+    say(page, "मैं पच्चीस साल का हूँ")
+    say(page, "मुझे वेल्डिंग और बिजली का काम आता है")
     say(page, "कारखाना")
-    say(page, "हाँ")
-    say(page, "तीन साल")
-    say(page, "हाँ")
-    say(page, "दिल्ली")
-    say(page, "हाँ")
-    say(page, "नहीं है")
+    say(page, "ek saal paanch mahine")
+    say(page, "मैं नोएडा में काम करना चाहता हूँ")
+    say(page, "मेरे पास ई-श्रम नंबर नहीं है")
     expect(page.locator("#confirmation")).to_be_visible()
-    expect(page.locator("#eshram_number")).to_have_value("")
-    # Review remains directly editable, including recognition mistakes.
-    page.locator("#name").fill("सही किया गया नाम")
-    spoken = page.evaluate("window.__speech.spoken")
-    assert len(spoken) > 10 and all(item["lang"] == "hi-IN" for item in spoken)
-    page.screenshot(path=str(RESULTS / "voice-review-mobile.png"), full_page=True)
+    expect(page.locator("#experience_months")).to_have_value("17")
+    expect(page.locator("#confirmed")).not_to_be_checked()
+    say(page, "नहीं")
+    say(page, "मेरा नाम बदलो")
+    say(page, "सही किया गया नाम")
+    expect(page.locator("#confirmation")).to_be_visible()
+    page.screenshot(path=str(RESULTS / "v2-voice-review-mobile.png"), full_page=True)
     layout(page)
-    say(page, "सेव करें")
+    assert page.evaluate("window.__speech.overlaps") == []
+    assert all(
+        row["lang"] == "hi-IN" for row in page.evaluate("window.__speech.spoken")
+    )
+    say(page, "सेव कर दो")
     expect(page).to_have_url(live + "/dashboard/laborer")
     page.reload()
     expect(page.get_by_role("heading", name="नमस्ते, सही किया गया नाम।")).to_be_visible()
+    data = page.request.get(live + "/api/laborer/profile").json()["profile"]
+    assert data["experience_months"] == 17 and data["experience_years"] == 1
     assert not errors
     context.close()
 
@@ -216,13 +206,18 @@ def test_mocked_hindi_voice_all_questions_correction_repeat_skip_save(
 )
 def test_mocked_recognition_errors_keep_typed_fallback(app, browser, live, error):
     context, page = worker_page(app, browser, live, mock=True)
-    page.locator("#start-voice").click()
+    start_voice(page)
     say(page, "परीक्षण श्रमिक")
-    page.locator("#listen").click()
-    page.evaluate("(code)=>window.__speech.error(code)", error)
-    expect(page.locator("#listen")).to_be_enabled()
-    assert page.evaluate("window.__speech.starts") == 2
-    expect(page.locator("#name")).to_have_value("परीक्षण श्रमिक")
+    expect(page.locator("#voice-state")).to_have_attribute("data-state", "listening")
+    page.evaluate("code=>window.__speech.error(code)", error)
+    if error == "no-speech":
+        expect(page.locator("#voice-state")).to_have_attribute(
+            "data-state", "listening"
+        )
+        page.evaluate("window.__speech.error('no-speech')")
+    expect(page.locator("#voice-state")).to_have_attribute("data-state", "paused")
+    assert page.evaluate("window.__speech.starts") <= 4
+    assert page.evaluate("window.__speech.overlaps") == []
     page.locator("#typed-mode").click()
     fill_profile(page)
     page.locator("#save-profile").click()
@@ -233,27 +228,35 @@ def test_mocked_recognition_errors_keep_typed_fallback(app, browser, live, error
 def test_mocked_silence_timeout_and_late_results_are_ignored(app, browser, live):
     context, page = worker_page(app, browser, live, mock=True)
     page.clock.install()
-    page.locator("#start-voice").click()
-    page.locator("#listen").click()
-    page.clock.fast_forward(10001)
-    expect(page.locator("#listen")).to_be_enabled()
-    expect(page.locator("#voice-status")).to_contain_text("कोई आवाज़ नहीं मिली")
-    page.evaluate("window.__speech.result('देर से आया जवाब')")
+    start_voice(page)
+    expect(page.locator("#voice-state")).to_have_attribute("data-state", "listening")
+    page.evaluate("window.oldRecognition=window.__speech.last")
+    page.clock.fast_forward(12001)
+    page.clock.fast_forward(301)
+    expect(page.locator("#voice-state")).to_have_attribute("data-state", "listening")
+    page.clock.fast_forward(12001)
+    expect(page.locator("#voice-state")).to_have_attribute("data-state", "paused")
+    page.evaluate(
+        "()=>{const r=[{transcript:'देर से आया जवाब'}];r.isFinal=true;window.oldRecognition.onresult({resultIndex:0,results:[r]});}"
+    )
     expect(page.locator("#name")).to_have_value("")
-    assert page.evaluate("window.__speech.starts") == 1
+    count = page.evaluate("window.__speech.starts")
+    page.clock.fast_forward(120000)
+    assert page.evaluate("window.__speech.starts") == count == 3
     context.close()
 
 
-def test_mocked_tts_failure_missing_voices_and_start_exception(app, browser, live):
+@pytest.mark.parametrize("failure", ["ttsError", "noVoices", "startError"])
+def test_mocked_tts_failure_missing_voices_and_start_exception(
+    app, browser, live, failure
+):
     context, page = worker_page(app, browser, live, mock=True)
-    page.evaluate(
-        "window.__speech.ttsError=true;window.__speech.noVoices=true;window.__speech.startError=true"
-    )
+    page.evaluate("key=>window.__speech[key]=true", failure)
     page.locator("#start-voice").click()
-    expect(page.locator("#voice-status")).to_contain_text("हिंदी आवाज़ नहीं चल पाई")
-    page.locator("#listen").click()
-    expect(page.locator("#voice-status")).to_contain_text("माइक्रोफ़ोन नहीं मिला")
-    expect(page.locator("#listen")).to_be_enabled()
+    expect(page.locator("#voice-state")).to_have_attribute("data-state", "paused")
+    assert page.evaluate("window.__speech.starts") == 0
+    if failure == "noVoices":
+        assert page.evaluate("window.__speech.spoken.length") == 0
     page.locator("#typed-mode").click()
     fill_profile(page)
     page.locator("#save-profile").click()

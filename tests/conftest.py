@@ -1,3 +1,7 @@
+from threading import Thread
+from playwright.sync_api import sync_playwright
+from werkzeug.serving import make_server
+
 import re
 from datetime import date, timedelta
 
@@ -104,3 +108,21 @@ def journey(app):
     assert post(worker, "/api/laborer/profile", json=PROFILE).status_code == 200
     assert login(manager, "employer@example.invalid").status_code == 302
     return worker, manager
+
+
+@pytest.fixture(scope="module")
+def browser():
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True, args=["--no-sandbox"])
+        yield browser
+        browser.close()
+
+
+@pytest.fixture
+def live(app):
+    server = make_server("127.0.0.1", 0, app, threaded=True)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    yield f"http://127.0.0.1:{server.server_port}"
+    server.shutdown()
+    thread.join(timeout=5)

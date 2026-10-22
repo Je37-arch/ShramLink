@@ -6,6 +6,8 @@ from sqlalchemy import case, literal, update
 from sqlalchemy.exc import IntegrityError
 
 from app import validation
+from app.experience import experience_label
+from app.job_speech import job_summary
 from app.models import (
     ApplicationStatus,
     Job,
@@ -55,8 +57,9 @@ def matching(job, worker):
     if job.domain and job.domain == worker.preferred_domain:
         reasons.append("पसंद का क्षेत्र / Preferred domain (+15)")
         score += 15
-    if worker.experience_years is not None and worker.experience_years >= (
-        job.min_experience or 0
+    if (
+        worker.total_experience_months is not None
+        and worker.total_experience_months >= job.required_experience_months
     ):
         reasons.append("अनुभव की शर्त पूरी / Experience meets requirement (+5)")
         score += 5
@@ -218,6 +221,10 @@ def job_dict(job):
         start_date=job.start_date.isoformat(),
         requirements=job.description,
         min_experience=job.min_experience,
+        min_experience_months=job.required_experience_months,
+        experience_label=experience_label(job.required_experience_months),
+        spoken_summary=job_summary(job),
+        spoken_requirements=f"काम की जगह। {job.worksite_address or job.location}। नियोक्ता की शर्तें। {job.description or 'अलग शर्तें नहीं दी गई हैं'}",
         needed=job.workers_needed,
         hired=job.workers_hired,
         status=job.status.value,

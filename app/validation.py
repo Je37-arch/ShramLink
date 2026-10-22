@@ -67,6 +67,25 @@ def password(data, errors):
     return value
 
 
+def duration(data, month_key, year_key, errors):
+    """V2 accepts exact months; V1 years remain supported when months are absent.
+
+    If both are present, the legacy field must equal completed years. Never
+    silently let a stale legacy field overwrite an exact month value.
+    """
+    if month_key not in data:
+        years = integer(data, year_key, 0, 62, errors)
+        return years * 12 if years is not None else None
+    months = integer(data, month_key, 0, 744, errors)
+    if year_key in data:
+        years = integer(data, year_key, 0, 62, errors)
+        if months is not None and years is not None and years != months // 12:
+            errors[month_key] = (
+                "महीने और वर्ष मेल नहीं खाते / Conflicting experience values."
+            )
+    return months
+
+
 def profile(data):
     errors = {}
     clean = {
@@ -74,7 +93,9 @@ def profile(data):
         "age": integer(data, "age", 18, 80, errors),
         "preferred_domain": choice(data, "preferred_domain", DOMAINS, errors),
         "location": choice(data, "location", LOCATIONS, errors),
-        "experience_years": integer(data, "experience_years", 0, 62, errors),
+        "experience_months": duration(
+            data, "experience_months", "experience_years", errors
+        ),
         "eshram_number": text(data, "eshram_number", 24, errors, required=False),
     }
     skills = (
@@ -93,12 +114,17 @@ def profile(data):
     clean["skills"] = list(dict.fromkeys(skills))
     if (
         clean["age"] is not None
-        and clean["experience_years"] is not None
-        and clean["experience_years"] > clean["age"] - 18
+        and clean["experience_months"] is not None
+        and clean["experience_months"] > (clean["age"] - 18) * 12
     ):
-        errors["experience_years"] = (
-            "18 वर्ष की उम्र के बाद का अनुभव लिखें / Enter experience after age 18."
-        )
+        errors[
+            "experience_months" if "experience_months" in data else "experience_years"
+        ] = "18 वर्ष की उम्र के बाद का अनुभव लिखें / Enter experience after age 18."
+    clean["experience_years"] = (
+        clean["experience_months"] // 12
+        if clean["experience_months"] is not None
+        else None
+    )
     clean["eshram_number"] = re.sub(r"[\s-]", "", clean["eshram_number"])
     if clean["eshram_number"] and not re.fullmatch(
         r"[0-9]{12}", clean["eshram_number"]
@@ -124,9 +150,16 @@ def vacancy(data):
         "worksite_address": text(data, "worksite_address", 200, errors, minimum=5),
         "wage_per_day": integer(data, "wage", 1, 100000, errors),
         "workers_needed": integer(data, "workers", 1, 1000, errors),
-        "min_experience": integer(data, "min_experience", 0, 62, errors),
+        "min_experience_months": duration(
+            data, "min_experience_months", "min_experience", errors
+        ),
         "shift_timing": text(data, "shift", 50, errors, minimum=3),
     }
+    clean["min_experience"] = (
+        clean["min_experience_months"] // 12
+        if clean["min_experience_months"] is not None
+        else None
+    )
     try:
         clean["start_date"] = date.fromisoformat(data.get("start_date", ""))
         if clean["start_date"] < localdate():

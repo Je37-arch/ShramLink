@@ -1,4 +1,4 @@
-// Test adapter only. It exercises browser events, NOT real audio recognition.
+// Test-only simulation. No physical microphone or pronunciation verification.
 window.__speech = {
   last: null,
   spoken: [],
@@ -6,17 +6,33 @@ window.__speech = {
   startError: false,
   ttsError: false,
   noVoices: false,
+  holdTTS: false,
+  holdEnd: false,
+  overlaps: [],
+  activeMic: false,
+  voices: [
+    { name: "Mock Hindi voice", lang: "hi-IN", voiceURI: "mock-hi" },
+    { name: "Second Hindi voice", lang: "hi_IN", voiceURI: "mock-hi-two" },
+  ],
+  voiceListeners: [],
 };
 class MockRecognition {
   start() {
     if (window.__speech.startError)
       throw new Error("Mock microphone unavailable");
+    if (window.speechSynthesis.speaking || window.__speech.activeMic)
+      window.__speech.overlaps.push("recognition");
     window.__speech.last = this;
-    window.__speech.starts += 1;
-    if (this.onstart) this.onstart();
+    window.__speech.starts++;
+    window.__speech.activeMic = true;
+    this.onstart?.();
   }
   abort() {
-    if (this.onend) queueMicrotask(() => this.onend());
+    if (!window.__speech.holdEnd)
+      queueMicrotask(() => {
+        window.__speech.activeMic = false;
+        this.onend?.();
+      });
   }
 }
 Object.defineProperty(window, "SpeechRecognition", {
@@ -38,29 +54,45 @@ Object.defineProperty(window, "SpeechSynthesisUtterance", {
 Object.defineProperty(window, "speechSynthesis", {
   configurable: true,
   value: {
+    speaking: false,
+    pending: false,
     getVoices() {
       return window.__speech.noVoices
-        ? []
-        : [{ name: "Mock Hindi voice", lang: "hi-IN" }];
+        ? [{ name: "English only", lang: "en-US" }]
+        : window.__speech.voices;
     },
-    cancel() {},
-    addEventListener() {},
+    cancel() {
+      this.speaking = false;
+      this.pending = false;
+    },
+    addEventListener(name, cb) {
+      if (name === "voiceschanged") window.__speech.voiceListeners.push(cb);
+    },
     speak(utterance) {
+      if (window.__speech.activeMic) window.__speech.overlaps.push("synthesis");
+      this.speaking = true;
+      window.__speech.utterance = utterance;
       window.__speech.spoken.push({
         text: utterance.text,
         lang: utterance.lang,
+        voice: utterance.voice?.name,
       });
-      queueMicrotask(() => {
-        if (window.__speech.ttsError)
-          utterance.onerror?.({ error: "synthesis-failed" });
-        else utterance.onend?.();
-      });
+      if (!window.__speech.holdTTS)
+        queueMicrotask(() => window.__speech.endTTS(utterance));
     },
   },
 });
-window.__speech.result = (text) => {
-  const result = [{ transcript: text }];
+window.__speech.endTTS = (utterance = window.__speech.utterance) => {
+  window.speechSynthesis.speaking = false;
+  if (window.__speech.ttsError)
+    utterance.onerror?.({ error: "synthesis-failed" });
+  else utterance.onend?.();
+};
+window.__speech.result = (text, confidence = 0.9) => {
+  const result = [{ transcript: text, confidence }];
   result.isFinal = true;
   window.__speech.last.onresult({ resultIndex: 0, results: [result] });
 };
 window.__speech.error = (code) => window.__speech.last.onerror({ error: code });
+window.__speech.voicesChanged = () =>
+  window.__speech.voiceListeners.forEach((cb) => cb());

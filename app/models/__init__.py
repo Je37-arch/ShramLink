@@ -47,6 +47,7 @@ class User(UserMixin, db.Model):
     # MVP profile fields. Legacy verification flags are retained, not trusted.
     preferred_domain = db.Column(db.String(40), nullable=True)
     experience_years = db.Column(db.Integer, nullable=True)
+    experience_months = db.Column(db.Integer, nullable=True)
     location = db.Column(db.String(100), nullable=True)
     profile_complete = db.Column(db.Boolean, nullable=False, default=False)
     credential_version = db.Column(db.Integer, nullable=False, default=2)
@@ -81,6 +82,12 @@ class User(UserMixin, db.Model):
         lazy="dynamic",
         foreign_keys="WorkerRating.worker_id",
     )
+
+    @property
+    def total_experience_months(self):
+        from app.experience import months_or_legacy
+
+        return months_or_legacy(self.experience_months, self.experience_years)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -158,6 +165,7 @@ class Job(db.Model):
     longitude = db.Column(db.Float, nullable=True)
     domain = db.Column(db.String(40), nullable=True)
     min_experience = db.Column(db.Integer, nullable=False, default=0)
+    min_experience_months = db.Column(db.Integer, nullable=True)
     worksite_address = db.Column(db.String(200), nullable=True)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=True)
@@ -181,6 +189,12 @@ class Job(db.Model):
     mass_hire_requests = db.relationship(
         "MassHireRequest", backref="job", lazy="dynamic"
     )
+
+    @property
+    def required_experience_months(self):
+        from app.experience import months_or_legacy
+
+        return months_or_legacy(self.min_experience_months, self.min_experience) or 0
 
     def __repr__(self):
         return f"<Job {self.job_code}: {self.title}>"

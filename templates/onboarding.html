@@ -1,67 +1,66 @@
 {% extends "base.html" %}{% from '_forms.html' import input, select, errors_summary, error_for %}
 {% block title %}अपनी प्रोफ़ाइल बनाएँ · ShramLink{% endblock %}
-{% block content %}<section class="container section"><div class="page-heading"><div><p class="eyebrow teal">आपका परिचय / YOUR PROFILE</p><h1>हुनर की बात करें।</h1><p>हिंदी में बोलें, या नीचे जानकारी लिखें। दोनों तरीकों से वही प्रोफ़ाइल बनेगी।</p></div><span class="tag">जानकारी स्वयं दी गई · Self-reported</span></div>
-    <div class="onboard-grid">
-        <aside class="onboard-guide panel-dark">
-            <p class="eyebrow">SHRAMLINK सहायक</p>
-            <h2>
-                एक-एक सवाल।
-                <br>
-                अपनी रफ़्तार से।
-            </h2>
-            <p>नाम, उम्र, कौशल, काम का क्षेत्र, अनुभव, शहर और वैकल्पिक e-Shram ID बताएँ।</p>
-            <div class="voice-start-actions">
-                <button type="button" id="start-voice" class="button primary full" hidden>◉ हिंदी में बोलकर शुरू करें</button><button type="button"
-        id="typed-mode"
-        class="button outline-light full"
-        hidden>कीबोर्ड से भरें / Type instead</button>
-            </div>
-            <p id="speech-support" class="small-text">टाइप करके पूरा फ़ॉर्म भर सकते हैं।</p>
-            <p class="small-text">माइक केवल आपके बटन दबाने पर चालू होगा। कुछ ब्राउज़र आवाज़ पहचानने के लिए अपनी ऑनलाइन सेवा को ऑडियो भेजते हैं। ShramLink ऑडियो सेव नहीं करता।</p>
-            <noscript>
-                <p>JavaScript बंद है। नीचे फ़ॉर्म भरकर प्रोफ़ाइल सेव करें।</p>
-            </noscript>
-        </aside>
-        <div class="panel profile-panel">
-            {{ errors_summary(errors) }}
-            <div id="voice-panel" hidden>
-                <div class="voice-progress-row"><span id="voice-progress"></span><span class="tag"
-      id="voice-state">तैयार</span></div>
-                <progress id="step-progress" max="7" value="1" aria-label="प्रोफ़ाइल की प्रगति"></progress>
-                <h2 id="voice-question" tabindex="-1"></h2>
-                <p id="voice-status" role="status" aria-live="polite">बटन दबाकर बोलें।</p>
-                <p id="voice-transcript" class="transcript" aria-live="polite"></p>
-                <div class="actions voice-tools">
-                    <button type="button" id="listen" class="button primary">◉ जवाब बोलें</button><button type="button" id="repeat" class="button secondary">फिर सुनें</button><button type="button" id="stop-voice" class="button subtle">आवाज़ रोकें</button>
-                </div>
-                <p class="hint">“दोहराएँ”, “पीछे”, “हाँ” कह सकते हैं। गलत जवाब हो तो फ़ील्ड बदलें या फिर बोलें।</p>
-            </div>
-            <form method="post" id="profile-form">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div data-step="name">{{ input('name','पूरा नाम / Full name',values,errors,maxlength=100,autocomplete='name') }}</div>
-                <div data-step="age">{{ input('age','उम्र / Age',values,errors,type='number',min=18,max=80,hint='यह MVP 18–80 वर्ष के श्रमिकों के लिए है।') }}</div>
-                <fieldset data-step="skills" class="field" id="skills"><legend>कौशल / Skills</legend><p class="hint">एक या अधिक चुनें।</p><div class="choice-grid">{% for key,label in skills.items() %}<label class="choice"><input type="checkbox"
-       name="skills"
-       value="{{ key }}"
-       {% if key in values.get('skills',[]) %}checked{% endif %}> <span>{{ label }}</span></label>{% endfor %}</div>{{ error_for('skills',errors) }}</fieldset>
-                <div data-step="preferred_domain">{{ select('preferred_domain','पसंदीदा काम का क्षेत्र / Preferred domain',domains,values,errors) }}</div>
-                <div data-step="experience_years">{{ input('experience_years','अनुभव (पूरे वर्ष) / Experience in years',values,errors,type='number',min=0,max=62,hint='नए हैं तो 0 लिखें। 18 वर्ष की उम्र के बाद का अनुभव बताएँ।') }}</div>
-                <div data-step="location">{{ select('location','किस शहर में काम चाहिए? / Preferred city',locations,values,errors) }}</div>
-                <div data-step="eshram_number">{{ input('eshram_number','e-Shram ID (वैकल्पिक / optional)',values,errors,required=false,maxlength=24,hint='12 अंक। नहीं है तो खाली छोड़ें। यह ID सत्यापित नहीं की जाएगी।') }}</div>
-                <div id="voice-next-controls" class="actions" hidden>
-                    <button type="button" id="previous" class="button secondary">← पिछला सवाल</button><button type="button" id="skip" class="button secondary" hidden>यह छोड़ें</button><button type="button" id="next" class="button primary">जवाब सही है, आगे →</button>
-                </div>
-                <div id="confirmation">
-                    <div class="form-divider"></div>
-                    <h2 id="review-title">जानकारी जाँचें और सेव करें</h2>
-                    <p class="muted">ऊपर किसी भी जवाब को बदल सकते हैं। यह जानकारी नियोक्ता आपके आवेदन के साथ देख सकेगा। पूरा e-Shram नंबर नियोक्ताओं को नहीं दिखेगा।</p>
-                    <label class="choice confirmation-choice">
-                        <input type="checkbox" name="confirmed" id="confirmed" value="yes" required><span>मैंने जानकारी जाँच ली है। यह मेरी दी हुई जानकारी है, सत्यापित प्रमाणपत्र नहीं।</span></label>{{ error_for('confirmed',errors) }}<button class="button primary full" type="submit" id="save-profile">प्रोफ़ाइल सेव करें और काम देखें →</button>
-                    <p id="save-status" role="status"></p>
-                </div>
-            </form>
+{% block content %}
+<section class="container section onboarding-v2">
+  <div class="page-heading"><div><p class="eyebrow teal">आपका परिचय</p><h1>बात करें। प्रोफ़ाइल बनाएँ।</h1><p>एक बार शुरू करें। फिर सवाल सुनें और जवाब बोलें।</p></div><span class="tag">जानकारी स्वयं दी गई</span></div>
+  <div class="onboard-grid">
+    <aside class="onboard-guide panel-dark">
+      <p class="eyebrow">SHRAMLINK सहायक</p><h2>आपका हुनर।<br>आपकी आवाज़।</h2>
+      <p>पहले आवाज़ जाँचेंगे। आखिरी पुष्टि के बाद ही जानकारी सेव होगी।</p>
+      <div class="voice-start-actions">
+        <button type="button" id="start-voice" class="button primary full" hidden>◉ बातचीत शुरू करें</button>
+        <button type="button" id="typed-mode" class="button outline-light full" hidden>⌨ लिखकर भरें / Type</button>
+      </div>
+      <p id="speech-support">नीचे लिखकर पूरा फ़ॉर्म भर सकते हैं।</p>
+      <p class="small-text">शुरू करने पर माइक सवालों के बीच अपने आप सुनेगा। ब्राउज़र आवाज़ पहचानने के लिए ऑनलाइन सेवा को ऑडियो भेज सकता है। ShramLink ऑडियो सेव नहीं करता।</p>
+      <noscript><p>नीचे पूरा फ़ॉर्म भरकर सेव करें।</p></noscript>
+    </aside>
+    <div class="panel profile-panel">
+      {{ errors_summary(errors) }}
+      <div class="js-audio">{% include '_speech_controls.html' %}</div>
+      <div id="voice-panel" hidden>
+        <div class="voice-progress-row"><span id="voice-progress"></span><span class="tag" id="voice-state" role="status">तैयार</span></div>
+        <progress id="step-progress" max="7" value="1" aria-label="प्रोफ़ाइल की प्रगति"></progress>
+        <h2 id="voice-question" tabindex="-1"></h2>
+        <p id="voice-status" role="status" aria-live="polite"></p>
+        <div class="actions voice-tools sticky-tools">
+          <button type="button" id="pause-voice" class="button secondary">Ⅱ विराम / Pause</button>
+          <button type="button" id="stop-voice" class="button secondary">■ बंद करें / Stop</button>
+          <button type="button" class="button secondary" id="type-shortcut">⌨ लिखें</button>
         </div>
+        <p id="voice-transcript" class="transcript" aria-live="polite"></p>
+        <button type="button" id="repeat" class="button subtle">↻ फिर सुनें</button>
+        <p class="hint">“दोबारा पूछो”, “पिछला सवाल”, “मेरा नाम बदलो”, “रुको” कह सकते हैं।</p>
+      </div>
+      <form method="post" id="profile-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div data-step="name">{{ input('name','पूरा नाम',values,errors,maxlength=100,autocomplete='name') }}</div>
+        <div data-step="age">{{ input('age','उम्र (साल)',values,errors,type='number',min=18,max=80,hint='18 से 80 साल।') }}</div>
+        <fieldset data-step="skills" class="field" id="skills"><legend>कौन सा काम आता है?</legend><p class="hint">एक या अधिक चुनें।</p><div class="choice-grid">{% for key,label in skills.items() %}<label class="choice"><input type="checkbox" name="skills" value="{{ key }}" {% if key in values.get('skills',[]) %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}</div>{{ error_for('skills',errors) }}</fieldset>
+        <div data-step="preferred_domain">{{ select('preferred_domain','कहाँ काम करना चाहेंगे?',domains,values,errors) }}</div>
+        <div data-step="experience_months">{{ input('experience_months','कुल अनुभव (महीने)',values,errors,type='number',min=0,max=744,hint='1 साल = 12 महीने। 1 साल 3 महीने = 15। नए हैं तो 0। 18 साल की उम्र के बाद का अनुभव।') }}</div>
+        <div data-step="location">{{ select('location','किस शहर में काम चाहिए?',locations,values,errors) }}</div>
+        <div data-step="eshram_number">{{ input('eshram_number','ई श्रम नंबर — ज़रूरी नहीं',values,errors,required=false,maxlength=24,hint='12 अंक, या खाली छोड़ें। यह सत्यापित नहीं होगा।') }}</div>
+        <div id="voice-next-controls" class="actions" hidden>
+          <button type="button" id="previous" class="button secondary">← पिछला सवाल</button>
+          <button type="button" id="skip" class="button secondary" hidden>यह छोड़ें</button>
+          <button type="button" id="next" class="button secondary">आगे →</button>
+        </div>
+        <div id="confirmation">
+          <div class="form-divider"></div><h2 id="review-title">जाँच लें। फिर सेव करें।</h2>
+          <p>ऊपर हर जवाब बदल सकते हैं। पूरा ई श्रम नंबर नियोक्ता को नहीं दिखेगा।</p>
+          <label class="choice confirmation-choice"><input type="checkbox" name="confirmed" id="confirmed" value="yes" required><span>मैंने जाँच लिया है। यह मेरी दी हुई जानकारी है, सत्यापित प्रमाणपत्र नहीं।</span></label>
+          {{ error_for('confirmed',errors) }}
+          <button class="button primary full" type="submit" id="save-profile">✓ प्रोफ़ाइल सेव करें</button>
+          <p id="save-status" role="status"></p>
+        </div>
+      </form>
     </div>
-    </section>
+  </div>
+</section>
 {% endblock %}
-{% block scripts %}<script defer src="{{ url_for('static',filename='js/voice-assistant.js') }}"></script>{% endblock %}
+{% block scripts %}
+<script defer src="{{ url_for('static',filename='js/profile-language.js') }}"></script>
+<script defer src="{{ url_for('static',filename='js/hindi-speech.js') }}"></script>
+<script defer src="{{ url_for('static',filename='js/voice-assistant.js') }}"></script>
+{% endblock %}

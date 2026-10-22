@@ -1,4 +1,5 @@
 "use strict";
+document.documentElement.classList.add("js-ready");
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("form").forEach((form) => {
     form.addEventListener("submit", (event) => {

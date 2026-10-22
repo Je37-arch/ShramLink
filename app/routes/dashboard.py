@@ -70,6 +70,9 @@ def profile_values():
         experience_years=current_user.experience_years
         if current_user.experience_years is not None
         else "",
+        experience_months=current_user.total_experience_months
+        if current_user.total_experience_months is not None
+        else "",
         eshram_number=current_user.eshram_number or "",
     )
 
@@ -163,6 +166,24 @@ def api_laborer_jobs():
                 current_user, skill, location
             )
         ]
+    )
+
+
+@dashboard_bp.route("/discover")
+@worker_only
+def discovery():
+    if not current_user.profile_complete:
+        return redirect(url_for("dashboard.onboarding"))
+    skill, location = filters()
+    rows = [
+        row for row in recruitment.discover(current_user, skill, location) if not row[2]
+    ]
+    return render_template(
+        "discovery.html",
+        rows=rows,
+        jobs=[dict(**recruitment.job_dict(job), match=match) for job, match, _ in rows],
+        filter_skill=skill,
+        filter_location=location,
     )
 
 
@@ -303,6 +324,7 @@ def api_manager_workers():
                 location=a.laborer.location,
                 preferred_domain=a.laborer.preferred_domain,
                 experience_years=a.laborer.experience_years,
+                experience_months=a.laborer.total_experience_months,
                 eshram_provided=bool(a.laborer.eshram_number),
                 information_source="self_reported",
                 status=a.status.value,

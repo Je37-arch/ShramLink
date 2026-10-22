@@ -1,39 +1,48 @@
-# ShramLink — Hindi voice recruitment MVP
+# ShramLink V2 — Hindi-first industrial recruitment
 
 **काम से जुड़ें. आगे बढ़ें.** A Hindi-first employment platform connecting informal
 industrial workers and factories in Delhi-NCR. Built with the original project's
 Flask, SQLAlchemy and worker/employer data model, with Jinja templates and vanilla
 JavaScript. No frontend framework or paid AI service is required.
 
-Development branch: **`feature/hindi-voice-mvp`** in **Je37-arch/ShramLink**.
-The original repository and `main` are outside this change.
+Development branch: **`feature/hindi-voice-v2`** in **Je37-arch/ShramLink**.
+Baseline: `feature/hindi-voice-mvp` at `92292c308f249efad593146fb8b635165445ed18`.
+The MVP branch, original repository and `main` remain outside this change.
 
-## What works
+## Implemented journey
 
-- Worker account creation and password login; Hindi conversational profile setup
-  with spoken questions, editable recognised answers and explicit confirmation.
-- Complete typed onboarding, including when microphone access, speech APIs or
-  JavaScript are unavailable.
-- Name, adult age, supported skills, preferred domain, experience, preferred city
-  and optional e-Shram ID, saved in the application's SQLite database.
-- Employer registration, vacancy posting, worker discovery/application,
-  shortlisting, selection/decline and persistent status visible in both accounts.
-- Explainable ranking: skill **50**, preferred city **30**, preferred domain **15**,
-  experience **5** points. Skill and minimum experience are required to apply.
-- Profile editing and applicant status filtering.
-- Hindi/English labels, responsive layouts, local fonts/assets and accessible
-  native form controls. No external font, icon or CSS CDN is needed.
+**Speak → create a profile → hear opportunities → swipe → apply → track the result.**
+
+- One Start action opens a bounded Hindi conversation, including an audio check.
+  Questions and listening alternate automatically. Corrections, repeat, back,
+  optional-ID skip, pause/stop and explicit final review are supported.
+- A deliberately selected Hindi voice, voice picker and pronunciation preflight.
+  Missing voices, permission denial or service failures leave typing available.
+- Deterministic Hindi/Hinglish extraction for the supported skills, domains,
+  NCR cities and numbers. Exact experience months, including mixed years/months.
+- One-job discovery with up/down navigation, skip/undo, application confirmation,
+  spoken summaries, keyboard/buttons and an optional practice tutorial.
+- Employer posting, shortlisting, selection/decline and persistent status in both
+  accounts. Existing authorization, CSRF, duplicate and capacity checks remain.
+- Fully typed onboarding and a no-JavaScript discovery/application fallback.
+- Navy/turquoise branding, local Hindi fonts and mobile layouts.
+
+Automated Chromium tests demonstrate the flow with **simulated speech**. Physical
+Hindi recognition and pronunciation remain unverified; run the device preflight
+before using voice mode at the hackathon. See [voice compatibility](docs/VOICE_COMPATIBILITY.md).
 
 Profiles and factory details are **self-reported**, not government-verified.
-There is no Aadhaar/e-Shram/GST validation, real SMS OTP, advanced AI matching,
-attendance tracking, payment gateway, escrow or automatic payout integration.
+There is no paid AI service, unrestricted chatbot, Aadhaar/e-Shram/GST verification,
+real SMS OTP, advanced AI matching, attendance tracking or payment integration.
+The deterministic ranking remains skill **50**, city **30**, domain **15** and
+experience **5** points. Skill and exact minimum experience are required to apply.
 
 ## Install and run
 
 Tested with Python **3.12** and SQLite. Use Python **3.10+** with `venv`.
 
 ```bash
-git clone --branch feature/hindi-voice-mvp --single-branch https://github.com/Je37-arch/ShramLink.git
+git clone --branch feature/hindi-voice-v2 --single-branch https://github.com/Je37-arch/ShramLink.git
 cd ShramLink
 python3 -m venv .venv
 source .venv/bin/activate
@@ -46,8 +55,9 @@ python run.py
 Open **http://127.0.0.1:5000**. On Windows, activate the environment with
 `.venv\Scripts\activate` instead. `python init_db.py` is an equivalent initializer.
 
-`init-db` is repeatable. It creates missing tables and adds the MVP columns to an
-older compatible SQLite database. It does **not** delete data, create users or
+`init-db` is repeatable. It creates missing tables and adds the V1/V2 columns to an
+older compatible SQLite database, then fills missing month values from legacy
+years × 12. Existing precise month values are preserved. It does **not** delete data, create users or
 seed fabricated recruitment activity. Application startup does not modify schema.
 
 ### Configuration
@@ -100,45 +110,61 @@ The sample vacancy is dated tomorrow on its **first** creation; post a new vacan
 if that date has passed. To demonstrate onboarding, register a new worker instead
 of using the already completed demo profile.
 
-## Hindi voice onboarding
+## Hindi conversation and job discovery
 
-1. Create a worker account using a mobile number and a private password. Account
-   credentials are entered by typing; never dictate a password.
-2. Choose **हिंदी में बोलकर शुरू करें**. The assistant asks seven bounded questions
-   using `SpeechSynthesis` with `hi-IN`.
-3. Tap **जवाब बोलें** for each response. Recognised text appears in an editable
-   field and is read back. Tap the mic and say **हाँ**, or use the next button.
-4. Use **दोहराएँ**, **पीछे**, **नाम बदलें** or the visible controls to correct an
-   answer. On the optional ID question, say **छोड़ें / नहीं है** or press Skip.
-5. Review every field. Save with the confirmation checkbox/button, or explicitly
-   say **सेव करें** at the review step.
+1. Register a worker account using a mobile number and private password. Credentials
+   remain typed; never dictate a password.
+2. Open **आवाज़ जाँचें** to select a Hindi voice and optionally hear the pronunciation
+   samples. Or press **बातचीत शुरू करें** directly: the first spoken turn asks whether
+   the Hindi audio is clear. Say **जी हाँ** if it is.
+3. Answer each question after the **अब आप बोलें** indicator. No repeated microphone,
+   Next or Confirm taps are needed in the successful supported flow. Examples:
+   “मेरा नाम रमेश कुमार है”, “मैं पच्चीस साल का हूँ”, “मुझे वेल्डिंग आती है”,
+   “कारखाना”, “ek saal paanch mahine”, “मैं नोएडा में काम करना चाहता हूँ”.
+4. Say **दोबारा पूछो**, **पिछला सवाल**, **मेरा नाम बदलो**, or
+   **नहीं, मेरा नाम सुरेश है**. For the optional ID, say **छोड़ दो**.
+5. Listen to the full review. Say **हाँ** or **सेव कर दो** only if correct. Every
+   field remains editable. Editing invalidates the previous voice confirmation.
+6. Press **काम खोजें** on the worker dashboard. Practise on the optional tutorial,
+   or skip it. Within the marked swipe strip: up = next, down = previous,
+   left = skip, right = open application confirmation. Every action has a button.
+7. Use **काम सुनें**, **शर्तें सुनें**, or explicitly enable automatic card reading.
+   Confirm **हाँ, आवेदन भेजें** to submit. See the result in **मेरे आवेदन**.
+8. In the employer account, review the applicant and select, shortlist or decline.
+   Reload the worker's applications to see the same persisted decision.
 
-The recogniser handles the listed skills/domains/cities and common Hindi number
-words; it is not an unrestricted chatbot. Answers outside that vocabulary need
-correction or typed input. The adult profile range is 18–80; experience is whole
-years since age 18. An e-Shram entry is format-checked only (12 digits).
+Pause, Stop and Type remain available throughout voice mode. Stop/typing/tab
+changes cancel audio and prevent automatic microphone restart. Unsaved profile
+answers exist only on the page. No raw microphone recordings or transcript logs
+are stored. Browser speech recognition may send audio to its vendor's online
+service. Localhost or HTTPS is required; ordinary HTTP LAN access is insufficient.
 
-### Compatibility and privacy
+### Experience units and upgrades
 
-- Use **localhost** on a laptop, or **HTTPS** on a phone. An ordinary HTTP LAN URL
-  is not sufficient for microphone access; the complete typed form still works.
-- Speech support and Hindi voices vary by browser, OS, installed voices, network
-  and microphone permissions. Chrome/Android and Safari/iOS **physical audio have
-  not been verified** in this environment. Do a device preflight before presenting.
-- Browser speech recognition may use its vendor's online service. This is not an
-  offline speech claim. ShramLink does not record or store audio or transcript logs.
-- Microphone access is explicit, time-bounded and never automatically restarted.
-  Permission denial, silence, missing hardware, recognition/network/language and
-  synthesis errors leave typing available. Late recognition results are ignored.
-- Hindi voices may arrive asynchronously; onboarding never waits indefinitely for
-  them. There is no paid-service fallback.
-- Saved profiles persist in SQLite. Unsaved answers exist only on the current
-  page. The optional full e-Shram ID is visible to its account owner, not employers;
-  it is stored as ordinary database text, so restrict filesystem/backup access.
+New forms use **total months** (`experience_months`, `min_experience_months`).
+For example, one year five months = **17**, two years eight months = **32**.
+Display uses months below 24 and completed years at 24 or above: 32 displays as
+2 years; eligibility still compares **32**, never 24. Exact minimum months are
+also shown when a rounded display could hide a requirement, and spoken job
+requirements retain remaining months.
 
-See the browser API's own compatibility notes:
-[SpeechRecognition](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition),
-[using Web Speech](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API/Using_the_Web_Speech_API).
+The server accepts legacy `experience_years` / `min_experience` when month fields
+are absent. If both units are supplied, years must equal months // 12; conflicting
+values are rejected. V2 writes both fields, with months authoritative. An explicit
+legacy-only write describes a new whole-year value; integrations should migrate
+to month fields to retain precision. Age is 18–80 and experience must fit the
+completed years after age 18. Unsupported or approximate phrases ask for clarification.
+Names retain their recognised script; there is no automatic name transliteration.
+
+Before upgrading an existing V1 deployment: stop writers, make a private SQLite
+backup, check out V2 and run `python -m flask --app run.py init-db`. It adds nullable
+columns and backfills only missing months. Repeated runs preserve exact months and
+old records. Roll back code only against a matching backup/copy; do not run V1 and
+V2 writers concurrently because V1 does not maintain the new month fields.
+
+Skipped job IDs survive reload in this browser tab, scoped to the worker account.
+Undo and Restore bring them back. This is not a cross-device preference service.
+The tutorial-complete flag is stored locally; neither store contains transcripts.
 
 ## Existing data and credential rotation
 
@@ -182,12 +208,12 @@ python -m pytest -q
 node --test tests/test_voice.js
 ```
 
-Node 20+ is only needed for the three speech-normalisation tests, not to run the
+Node 20+ is only needed for parser and gesture tests, not to run the
 application. Linux may need Playwright's documented browser system dependencies.
 For backend-only checks, omit `tests/test_browser.py` explicitly:
 
 ```bash
-python -m pytest -q tests/test_recruitment.py tests/test_security_and_setup.py
+python -m pytest -q tests/test_recruitment.py tests/test_security_and_setup.py tests/test_v2_months.py
 ```
 
 Tests create isolated temporary databases and use synthetic data. Browser tests
@@ -195,17 +221,22 @@ start a local HTTP server, perform real UI actions and save screenshots under
 ignored `test-results/`. Voice tests inject a **test-only speech adapter**; they
 validate the state machine and event handling, not physical speech accuracy.
 
-- [Implementation report](docs/IMPLEMENTATION_REPORT.md)
-- [Acceptance tests and limitations](docs/TEST_RESULTS.md)
-- [Hackathon demo script](docs/DEMO_SCRIPT.md)
-- [Truthful presentation feature inventory](docs/PRESENTATION_CLAIMS.md)
+- [V2 implementation report](docs/V2_IMPLEMENTATION_REPORT.md)
+- [V2 test results and screenshot instructions](docs/V2_TEST_RESULTS.md)
+- [Voice compatibility and physical test checklist](docs/VOICE_COMPATIBILITY.md)
+- [V2 hackathon demo](docs/V2_DEMO_SCRIPT.md)
+- [V2 presentation claims](docs/V2_PRESENTATION_CLAIMS.md)
+- [Historical V1 results](docs/TEST_RESULTS.md)
 
 ## Project structure
 
 `app/models/` retains the original entities. `app/recruitment.py` owns the shared
 HTML/API recruitment operations. `app/validation.py` validates writable fields.
 `app/commands.py` owns explicit setup/demo/reset commands. `static/js/voice-assistant.js`
-contains the bounded speech interaction. Templates and local CSS need no build step.
+owns conversation turns; `profile-language.js` extracts bounded answers,
+`hindi-speech.js` owns synthesis and `discovery.js` owns the card/tutorial UI.
+`app/experience.py` and `app/job_speech.py` share exact experience and vacancy
+speech rules. Templates and local CSS need no build step.
 All dates used for vacancy deadlines follow **Asia/Kolkata**; legacy timestamps
 remain UTC in storage and are converted for worker-facing display.
 
