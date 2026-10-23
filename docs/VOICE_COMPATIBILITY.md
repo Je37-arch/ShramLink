@@ -1,6 +1,6 @@
-# Hindi voice compatibility — V2
+# Hindi voice compatibility — V2 baseline and V3
 
-**No physical-device Hindi speech combination has been verified during this V2
+**No physical-device Hindi speech combination has been verified during this V2/V3
 implementation.** Automated tests simulate speech events in Chromium. They prove
 software state transitions and fallbacks, not recognition accuracy or pronunciation.
 
@@ -49,7 +49,7 @@ private worker speech or use real IDs in demonstrations.
 | Environment | UI / lifecycle | Physical Hindi audio |
 | --- | --- | --- |
 | Linux, headless Chromium 141.0.7390.37, Playwright 1.56.0 | Automated forms, real pointer/keyboard actions and simulated speech events | Not tested |
-| Chromium at 320, 360, 390, 768 and 1440 CSS px | Responsive browser layout checks; screenshots at 390 and 1440 | Not a physical phone test |
+| Chromium at 320, 360, 390, 768 and 1440 CSS px | Responsive browser layout checks; V3 before/after screenshots at 390, 768 and 1440 | Not a physical phone test |
 | macOS + Chrome / Safari, including the two reported Macs | Not executed on physical devices in this run | Required; reported discrepancy remains unresolved |
 | Android + Chrome | Target for device preflight; not verified | Required |
 | iPhone/iPad + Safari | Target for device preflight; not verified | Required |
@@ -63,7 +63,7 @@ private worker speech or use real IDs in demonstrations.
 - Recognition silence (12 seconds): one retry, then pause. Repeated unclear
   answers and the overall session also have strict budgets.
 - Permission, hardware, service/network/language error: pause, explain recovery,
-  retain entered values and offer typing. There is no paid-service fallback.
+  retain entered values and offer typing. There is no paid speech-service fallback.
 - Late/duplicate events are ignored. Recognition must signal its end before the
   next spoken question. Missing shutdown blocks further audio.
 - Backgrounding, Stop or Type cancels active speech and listening. Resume needs
@@ -75,6 +75,30 @@ claim is made. Some engines require further gestures after interruption; this is
 an explicit resume/fallback situation, not a universal hands-free guarantee.
 Employer-provided English text and names remain verbatim; fluent Hindi translation
 of arbitrary job descriptions is outside the bounded system.
+
+## V3 additions and evidence (2026-10-23)
+
+The native speech infrastructure and bounded V2 turn manager remain in place.
+The redesigned interface keeps Pause, Stop and Type visible; on unsupported
+recognition, permission failure or other voice errors, the typing form opens.
+All 32 previous browser tests pass on V3, alongside 13 new browser tests.
+
+The tutorial now separates **Listen/Replay** from **Stop**. Opening it automatically
+does not speak. An explicit Listen click starts narration and enables automatic
+reading of subsequent lessons. The same Hindi voice picker and synthesis service
+are used as onboarding and job descriptions. Simulated browser tests verify each
+lesson, replay, stop, missing voice and synthesis failure. They do not establish
+physical pronunciation quality or prove the reported manual audio defect fixed.
+
+Optional API interpretation changes text understanding only; it does not replace
+recognition or synthesis. Known local answers, e-Shram input and final confirmation
+remain local. Unresolved short answers may be sent to xAI only in a configured,
+disclosed API session. Timeout/error returns to local clarification. Pausing
+ignores late provider results. No paid xAI request was made in this environment.
+
+Before a live demonstration, extend the device preflight above with tutorial
+Listen → replay → next lesson → Stop → close, and a monthly-pay vacancy summary.
+No additional physical browser/device combinations have been verified for V3.
 
 ## Reference documentation
 

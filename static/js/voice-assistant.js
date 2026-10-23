@@ -1,6 +1,6 @@
 /* Bounded Hindi registration. Only an explicitly started session may listen.
  * Every turn awaits synthesis, a quiet gap, recognition end, then interpretation.
- * No recording, transcript logging, remote LLM, or unreviewed database writes. */
+ * No recording, transcript logging or unreviewed database writes. Optional bounded interpretation never controls saving. */
 (function (root) {
   "use strict";
   const L =
@@ -120,6 +120,14 @@
           this.pause("पेज छिपने पर बातचीत रोक दी। वापस आकर फिर शुरू करें।");
       });
       win.addEventListener("pagehide", () => this.halt());
+      const editor = doc.getElementById("profile-editor");
+      if (
+        editor &&
+        this.Recognition &&
+        win.isSecureContext &&
+        !doc.querySelector(".notice.error")
+      )
+        editor.open = false;
       this.render();
     }
     message(text) {
@@ -127,6 +135,9 @@
     }
     setState(state, message) {
       this.state = state;
+      const stage = this.doc.getElementById("conversation-stage");
+      if (stage) stage.dataset.state = state;
+      this.el["pause-voice"].disabled = state === "idle";
       this.el["voice-state"].dataset.state = state;
       const labels = {
         idle: "तैयार",
@@ -145,6 +156,7 @@
     }
     halt() {
       this.active = false;
+      this.interpretController?.abort();
       this.token++;
       this.speech.cancel();
       if (this.recognition) this.recognition.close({ error: "cancelled" });
@@ -177,6 +189,8 @@
       this.form.querySelector("input:not([type=hidden])")?.focus();
     }
     showAll() {
+      const editor = this.doc.getElementById("profile-editor");
+      if (editor) editor.open = true;
       this.groups.forEach((g) => (g.hidden = false));
       this.el.confirmation.hidden = false;
     }
@@ -207,6 +221,8 @@
         return;
       }
       this.active = true;
+      const welcome = this.doc.getElementById("voice-welcome");
+      if (welcome) welcome.hidden = true;
       this.token++;
       this.el["voice-panel"].hidden = false;
       this.el["voice-next-controls"].hidden = false;
@@ -290,6 +306,8 @@
             ? "सही है? तभी सेव होगा।"
             : STEPS[this.index].question;
       if (!this.el["voice-panel"].hidden) {
+        const editor = this.doc.getElementById("profile-editor");
+        if (editor) editor.open = true;
         this.groups.forEach((g, i) => (g.hidden = !review && i !== this.index));
         this.el.confirmation.hidden = !review;
       }
@@ -345,7 +363,105 @@
         this.clarify("साफ़ नहीं सुन पाया। धीरे से फिर बताएँ। ");
         return;
       }
+      const interpreted = await this.interpretAnswer(answer.text, token);
+      if (token !== this.token || !this.active) return;
+      if (interpreted) return;
       this.receive(answer.text);
+    }
+    async interpretAnswer(text, token) {
+      const key =
+        this.phase === "choose-correction" ? "name" : STEPS[this.index].key;
+      if (
+        this.form.dataset.voiceProvider !== "api" ||
+        !["answer", "choose-correction"].includes(this.phase) ||
+        key === "eshram_number" ||
+        L.command(text) ||
+        L.correction(text)
+      )
+        return false;
+      // Clear local answers remain authoritative and do not incur API costs.
+      const local = L.parse(key, text);
+      if (
+        this.phase !== "choose-correction" &&
+        local !== null &&
+        (!Array.isArray(local) || local.length)
+      )
+        return false;
+      const controller = new AbortController();
+      this.interpretController = controller;
+      const timer = this.win.setTimeout(() => controller.abort(), 8000);
+      const status = this.doc.getElementById("interpretation-status");
+      try {
+        const age = Number(this.value("age"));
+        const response = await this.win.fetch("/api/laborer/interpret", {
+          method: "POST",
+          credentials: "same-origin",
+          signal: controller.signal,
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": this.doc.querySelector('meta[name="csrf-token"]')
+              .content,
+          },
+          body: JSON.stringify({
+            transcript: text,
+            field: key,
+            phase: this.phase,
+            age: age >= 18 && age <= 80 ? age : null,
+          }),
+        });
+        const result = await response.json();
+        if (token !== this.token || !this.active) return true;
+        if (!response.ok || result.fallback || result.provider !== "api") {
+          if (status)
+            status.textContent =
+              "ऑनलाइन मदद उपलब्ध नहीं। सामान्य सवाल-जवाब से जारी हैं।";
+          return false;
+        }
+        if (status)
+          status.textContent =
+            "ऑनलाइन मदद से समझा। सेव करने से पहले जानकारी जाँचें।";
+        if (result.intent === "clarify") {
+          this.clarify(result.clarification);
+          return true;
+        }
+        const index = STEPS.findIndex((s) => s.key === result.field);
+        if (
+          index < 0 ||
+          result.field === "eshram_number" ||
+          !["answer", "correct"].includes(result.intent) ||
+          (result.intent === "answer" && index !== this.index)
+        )
+          return false;
+        if (result.intent === "correct") {
+          this.returnToReview = ["review", "choose-correction"].includes(
+            this.phase,
+          );
+          this.index = index;
+          this.phase = "answer";
+        }
+        const old = this.value(result.field);
+        this.put(result.field, result.value);
+        if (!this.valid(index)) {
+          this.put(result.field, old);
+          this.clarify("यह जवाब सही नहीं लगा। फिर बताएँ। ");
+          return true;
+        }
+        this.errors = 0;
+        this.advance(
+          `${STEPS[this.index].label}। ${this.label(STEPS[this.index])}। `,
+        );
+        return true;
+      } catch {
+        if (token !== this.token || !this.active) return true;
+        if (status)
+          status.textContent =
+            "ऑनलाइन मदद नहीं मिली। सामान्य सवाल-जवाब से जारी हैं।";
+        return false;
+      } finally {
+        this.win.clearTimeout(timer);
+        if (this.interpretController === controller)
+          this.interpretController = null;
+      }
     }
     capture() {
       return new Promise((resolve) => {

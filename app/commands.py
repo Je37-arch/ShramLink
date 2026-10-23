@@ -24,6 +24,10 @@ ADDITIONS = {
         "min_experience": "INTEGER NOT NULL DEFAULT 0",
         "min_experience_months": "INTEGER",
         "worksite_address": "VARCHAR(200)",
+        "employment_category": "VARCHAR(30)",
+        "wage_amount": "INTEGER",
+        "wage_unit": "VARCHAR(10)",
+        "fixture_key": "VARCHAR(80)",
     },
 }
 
@@ -137,6 +141,23 @@ def register_commands(app):
         )
         click.echo(
             "Existing demo accounts and vacancies were not overwritten. Use reset-password to change a password."
+        )
+
+    @app.cli.command("seed-demo-v3")
+    @click.option(
+        "--password",
+        prompt="Choose a demonstration password (10+ characters)",
+        hide_input=True,
+        confirmation_prompt=True,
+    )
+    def seed_demo_v3(password):
+        from app.demo_fixtures import seed_v3
+
+        init_database()
+        identities = seed_v3(password)
+        click.echo("Fictional fixtures ready: " + identities)
+        click.echo(
+            "Existing records, dates, passwords and application outcomes were not overwritten."
         )
 
     @app.cli.command("reset-password")

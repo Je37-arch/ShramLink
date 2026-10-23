@@ -10,9 +10,16 @@ from flask import (
 )
 from flask_login import current_user, login_required
 
-from app import recruitment, validation
+from app import recruitment, validation, external_jobs
 from app.catalog import LOCATIONS, SKILLS
-from app.models import ApplicationStatus, Job, JobApplication, UserRole, db
+from app.models import (
+    ApplicationStatus,
+    Job,
+    JobApplication,
+    UserRole,
+    DemoPreparation,
+    db,
+)
 from app.security import role_required
 
 dashboard_bp = Blueprint("dashboard", __name__)
@@ -150,6 +157,10 @@ def laborer_dashboard():
         "dashboard/laborer.html",
         rows=rows,
         applications=applications,
+        preparations=DemoPreparation.query.filter_by(laborer_id=current_user.id)
+        .order_by(DemoPreparation.prepared_at.desc())
+        .all(),
+        preparation_status=external_jobs.PREPARED_STATUS,
         filter_skill=skill,
         filter_location=location,
     )
@@ -178,10 +189,16 @@ def discovery():
     rows = [
         row for row in recruitment.discover(current_user, skill, location) if not row[2]
     ]
+    external_cards, feed_message = external_jobs.available_cards(
+        current_user, skill, location
+    )
     return render_template(
         "discovery.html",
         rows=rows,
-        jobs=[dict(**recruitment.job_dict(job), match=match) for job, match, _ in rows],
+        jobs=[dict(**recruitment.job_dict(job), match=match) for job, match, _ in rows]
+        + external_cards,
+        external_cards=external_cards,
+        feed_message=feed_message,
         filter_skill=skill,
         filter_location=location,
     )
@@ -346,3 +363,43 @@ def api_manager_dashboard():
             )
         ]
     )
+
+
+@dashboard_bp.route("/external/<int:vacancy_id>/preview", methods=["GET", "POST"])
+@worker_only
+def external_preview(vacancy_id):
+    vacancy = external_jobs.vacancy_for_preview(current_user, vacancy_id)
+    if request.method == "POST":
+        external_jobs.prepare(current_user, vacancy_id, request.form)
+        flash(external_jobs.PREPARED_STATUS + ". " + external_jobs.NOTICE_HI, "success")
+        return redirect(url_for("dashboard.laborer_dashboard", _anchor="preparations"))
+    return render_template(
+        "external_preview.html", preview=external_jobs.preview(current_user, vacancy)
+    )
+
+
+@dashboard_bp.route("/api/laborer/external/<int:vacancy_id>/preview")
+@worker_only
+def api_external_preview(vacancy_id):
+    vacancy = external_jobs.vacancy_for_preview(current_user, vacancy_id)
+    return jsonify(external_jobs.preview(current_user, vacancy))
+
+
+@dashboard_bp.route("/api/laborer/external/<int:vacancy_id>/prepare", methods=["POST"])
+@worker_only
+def api_external_prepare(vacancy_id):
+    record = external_jobs.prepare(current_user, vacancy_id, json_data())
+    return jsonify(
+        success=True,
+        preparation_id=record.id,
+        status="demo_prepared",
+        status_label=external_jobs.PREPARED_STATUS,
+    )
+
+
+@dashboard_bp.route("/api/laborer/interpret", methods=["POST"])
+@worker_only
+def api_interpret():
+    from app.interpretation import interpret
+
+    return jsonify(interpret(current_user, json_data()))

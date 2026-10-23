@@ -9,7 +9,15 @@ from flask_wtf.csrf import CSRFError, CSRFProtect
 from werkzeug.exceptions import HTTPException
 from werkzeug.security import generate_password_hash
 
-from app.catalog import DOMAINS, LOCATIONS, SKILLS, STATUS_LABELS
+from app.catalog import (
+    DOMAINS,
+    LOCATIONS,
+    SKILLS,
+    STATUS_LABELS,
+    EMPLOYMENT_CATEGORIES,
+    CATEGORY_LABELS,
+    WAGE_UNITS,
+)
 from app.experience import experience_label
 from app.models import db, login_manager
 from app.timeutils import india_date, localdate
@@ -42,14 +50,28 @@ def create_app(test_config=None):
         LOGIN_ACCOUNT_LIMIT=8,
         LOGIN_IP_LIMIT=30,
     )
+    from app.settings import defaults, configure
+
+    app.config.update(defaults())
     if test_config:
         app.config.update(test_config)
+    configure(app)
     if production and (
         not app.config["SECRET_KEY"] or len(app.config["SECRET_KEY"]) < 32
     ):
         raise RuntimeError(
             "Production requires a fresh SECRET_KEY of at least 32 characters."
         )
+    if (
+        production
+        and not os.getenv("DATABASE_URL")
+        and not (test_config and "SQLALCHEMY_DATABASE_URI" in test_config)
+    ):
+        raise RuntimeError(
+            "Production requires an explicit DATABASE_URL on persistent storage."
+        )
+    if production and os.getenv("DATABASE_URL") in ("sqlite://", "sqlite:///:memory:"):
+        raise RuntimeError("Production cannot use an in-memory database.")
     Path(app.instance_path).mkdir(mode=0o700, parents=True, exist_ok=True)
     if not app.config["SECRET_KEY"]:
         key_file = Path(app.instance_path) / ".session-key"
@@ -86,6 +108,9 @@ def create_app(test_config=None):
             domains=DOMAINS,
             locations=LOCATIONS,
             status_labels=STATUS_LABELS,
+            employment_categories=EMPLOYMENT_CATEGORIES,
+            category_labels=CATEGORY_LABELS,
+            wage_units=WAGE_UNITS,
             today=localdate().isoformat(),
         )
 

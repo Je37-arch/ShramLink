@@ -59,7 +59,7 @@ def job_summary(job):
         f"यह {SKILLS[job.skill.value].split(' / ')[0]} का काम है। "
         f"काम का नाम {job.title}। नियोक्ता {job.manager.factory_name}। "
         f"जगह {LOCATIONS.get(job.location, job.location).split(' / ')[0]}। "
-        f"रोज़ {hindi_number(job.wage_per_day)} रुपये मिलेंगे। "
+        f"{'हर महीने' if job.pay_unit == 'month' else 'रोज़'} {hindi_number(job.pay_amount)} रुपये मिलेंगे। "
         f"काम {shift_speech(job.shift_timing)}। "
         f"तारीख {hindi_number(job.start_date.day)} {MONTHS[job.start_date.month - 1]} {job.start_date.year}। "
         f"कम से कम {duration} का अनुभव चाहिए। "

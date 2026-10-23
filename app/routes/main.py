@@ -1,4 +1,7 @@
-from flask import Blueprint, redirect, render_template, url_for
+from flask import Blueprint, jsonify, redirect, render_template, url_for
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+from app.models import db
 
 main_bp = Blueprint("main", __name__)
 
@@ -17,3 +20,14 @@ def about():
 def laborer_standalone():
     # Keep the old entry URL, but require the real account/dashboard flow.
     return redirect(url_for("dashboard.laborer_dashboard"))
+
+
+@main_bp.route("/healthz")
+def health():
+    try:
+        # Also checks that explicit migration/setup has been run.
+        db.session.execute(text("SELECT id FROM users LIMIT 1"))
+        return jsonify(status="ok", application="ShramLink")
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify(status="unavailable"), 503

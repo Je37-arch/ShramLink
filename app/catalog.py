@@ -29,3 +29,15 @@ STATUS_LABELS = {
     "rejected": "चयन नहीं हुआ / Not selected",
     "withdrawn": "वापस लिया / Withdrawn",
 }
+
+
+EMPLOYMENT_CATEGORIES = {
+    "direct_informal": "अनौपचारिक · सीधा / Informal · direct",
+    "direct_formal": "औपचारिक · सीधा / Formal · direct",
+}
+CATEGORY_LABELS = dict(
+    EMPLOYMENT_CATEGORIES,
+    direct_unspecified="सीधा · प्रकार नहीं बताया / Direct · category unspecified",
+    formal_external="औपचारिक · बाहरी / Formal · external",
+)
+WAGE_UNITS = {"day": "प्रति दिन / Per day", "month": "प्रति महीना / Per month"}

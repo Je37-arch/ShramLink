@@ -114,7 +114,7 @@ def test_mobile_typed_recruitment_journey(app, browser, live):
     ).items():
         employer.locator("#" + field).fill(value)
     for field, value in dict(
-        skill="welder", domain="manufacturing", location="Delhi"
+        skill="welder", domain="manufacturing", location="Delhi", employment_category="direct_informal", wage_unit="day"
     ).items():
         employer.locator("#" + field).select_option(value)
     employer.get_by_role("button", name="Publish vacancy").click()

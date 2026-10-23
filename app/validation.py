@@ -3,7 +3,7 @@
 import re
 from datetime import date
 
-from app.catalog import DOMAINS, LOCATIONS, SKILLS
+from app.catalog import DOMAINS, LOCATIONS, SKILLS, EMPLOYMENT_CATEGORIES, WAGE_UNITS
 from app.timeutils import localdate
 
 
@@ -155,6 +155,20 @@ def vacancy(data):
         ),
         "shift_timing": text(data, "shift", 50, errors, minimum=3),
     }
+    # V1 clients that omit type retain an honest unspecified category.
+    clean["employment_category"] = (
+        choice(data, "employment_category", EMPLOYMENT_CATEGORIES, errors)
+        if "employment_category" in data
+        else None
+    )
+    clean["wage_unit"] = (
+        choice(data, "wage_unit", WAGE_UNITS, errors) if "wage_unit" in data else "day"
+    )
+    clean["wage_amount"] = clean["wage_per_day"]
+    if clean["wage_unit"] == "month":
+        clean["wage_per_day"] = (
+            0  # Retained legacy NOT NULL column, never a daily conversion.
+        )
     clean["min_experience"] = (
         clean["min_experience_months"] // 12
         if clean["min_experience_months"] is not None

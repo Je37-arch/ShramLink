@@ -1,79 +1,21 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% from '_icons.html' import icon %}
 {% block content %}
-    <section class="hero">
-        <div class="container hero-grid">
-            <div class="hero-copy">
-                <p class="eyebrow"><span class="live-dot"></span> दिल्ली–NCR · WORK & WORKFORCE</p>
-                <h1>
-                    आपका हुनर.
-                    <br>
-                    <em>आपका अगला काम.</em>
-                </h1>
-                <p class="hero-english" lang="en">Good work starts with the right connection.</p>
-                <p class="hero-description">अपनी भाषा में प्रोफ़ाइल बनाएँ। काम की जगह, मज़दूरी और ज़रूरतें जानें। सीधे आवेदन करें।</p>
-                <div class="actions"><a class="button primary" href="{{ url_for('auth.register_laborer') }}">◉ बोलकर काम खोजें <span aria-hidden="true">→</span><small>श्रमिक / Worker</small></a><a class="button outline-light"
-   href="{{ url_for('auth.register_manager') }}">मुझे श्रमिक चाहिए <span aria-hidden="true">→</span><small>I'm an employer</small></a></div>
-                <p class="hero-note">हिंदी में बोलें या टाइप करें · आवेदन की स्थिति एक ही जगह</p>
-            </div>
-            <div class="hero-visual">
-                <div class="visual-top"><span class="mono">THE NEXT SHIFT STARTS HERE</span><span class="mono">01 — NCR</span></div>
-                <svg class="factory" viewBox="0 0 480 200" fill="none" aria-hidden="true">
-                    <path d="M25 180H455M55 180V96L130 56V96L205 56V96L280 56V180M280 180V110H424V180M330 110V24H353V110M377 110V46H400V110" stroke="currentColor" stroke-width="3" />
-                    <path d="M78 125H107V151H78ZM154 125H183V151H154ZM230 125H259V151H230ZM309 137H335V162H309ZM365 137H391V162H365Z" fill="currentColor" opacity=".35" />
-                    <path d="M343 10C318-9 391-9 388-35" stroke="currentColor" stroke-width="2" stroke-dasharray="4 8" />
-                </svg>
-                <div class="voice-preview">
-                    <span class="mic-symbol" aria-hidden="true">◉</span>
-                    <div>
-                        <span class="eyebrow">SHRAMLINK सहायक</span>
-                        <p>“आपको कौन-सा काम आता है?”</p>
-                        <span class="muted">एक सवाल, एक आसान जवाब।</span>
-                    </div>
-                    <div class="sound-bars" aria-hidden="true">
-                        <i></i><i></i><i></i><i></i><i></i>
-                    </div>
-                </div>
-                <div class="connection-strip"><span>हुनर</span><span aria-hidden="true">→</span><span>मौका</span><span aria-hidden="true">→</span><span>चयन</span></div>
-                <p class="visual-caption">Voice profiles. Clear requirements. A shared hiring journey.</p>
-            </div>
-        </div>
-    </section>
-    <section class="container section" id="how">
-        <div class="section-heading">
-            <div>
-                <p class="eyebrow teal">काम तक पहुँच, आसान</p>
-                <h2>तीन कदम. नई शुरुआत.</h2>
-            </div>
-            <p class="muted">
-                For workers and the factories
-                <br>
-                that need their skills.
-            </p>
-        </div>
-        <div class="three-grid">
-            <article class="step-card"><span class="step-number">01</span>
-                <h3>अपना परिचय दें</h3>
-                <p>हिंदी में बोलकर या लिखकर नाम, कौशल और अनुभव बताएँ। सेव करने से पहले सब जाँचें।</p>
-                <span class="tag">हिंदी आवाज़ + टाइपिंग</span></article><article class="step-card"><span class="step-number">02</span>
-                <h3>सही काम खोजें</h3>
-                <p>एक-एक काम देखें और सुनें। स्वाइप करें या बटन दबाएँ। अपनी पुष्टि के बाद आवेदन भेजें।</p>
-                <span class="tag">स्पष्ट जानकारी</span></article><article class="step-card"><span class="step-number">03</span>
-                <h3>चयन की खबर देखें</h3>
-                <p>नियोक्ता आवेदन देखता है और श्रमिक चुनता है। दोनों के खाते में वही स्थिति दिखती है।</p>
-                <span class="tag">साझा स्थिति</span></article>
-        </div>
-    </section>
-    <section class="container employer-band">
-        <div>
-            <p class="eyebrow">FOR LOCAL INDUSTRY</p>
-            <h2>Your next shift needs the right people.</h2>
-            <p>Post a vacancy. Review skills and experience. Make a clear hiring decision.</p>
-        </div>
-        <a class="button primary"
-           href="{{ url_for('auth.register_manager') }}">Create employer account <span aria-hidden="true">↗</span></a>
-    </section>
-    <section class="container trust-note">
-        <strong>जानकारी की स्पष्टता</strong>
-        <p>प्रोफ़ाइल और कारखाने की जानकारी उपयोगकर्ता स्वयं देते हैं। e-Shram ID वैकल्पिक है और इस MVP में सत्यापित नहीं होती। काम शुरू करने से पहले शर्तें सीधे नियोक्ता से तय करें।</p>
-    </section>
+<section class="home-stage container">
+  <div class="home-intro">
+    <p class="eyebrow">दिल्ली–NCR के श्रमिकों और उद्योगों के लिए</p>
+    <h1>हुनर आपका।<br><em>अगला कदम <br>हमारे साथ।</em></h1>
+    <p class="home-lead">अपनी भाषा में बोलें। <br>अपने लिए काम चुनें।</p>
+    <div class="industry-scene" aria-hidden="true"><svg viewBox="0 0 560 180" fill="none"><path d="M0 160h560M25 160V75l80-43v43l80-43v43l80-43v128M265 160V95h90V22h25v73h100v65M47 105h25v28H47Zm82 0h25v28h-25Zm82 0h25v28h-25Zm84 18h30v37h-30Zm105-5h25v24h-25Z" stroke="currentColor" stroke-width="3"/><circle cx="506" cy="58" r="26" stroke="currentColor" stroke-width="2"/><path d="M478 160v-40a28 28 0 0 1 56 0v40M492 120v40m28-40v40M477 56h58" stroke="currentColor" stroke-width="3"/></svg><span>मेहनत को मिले सही मौका।</span></div>
+  </div>
+  <div class="entry-choices">
+    <article class="worker-entry"><div class="entry-top"><span class="icon-tile">{{ icon('mic') }}</span><span class="tag">श्रमिक · WORKER</span></div><h2>मुझे काम चाहिए</h2><p>सवाल सुनें। जवाब बोलें। <br>मिलकर आपकी प्रोफ़ाइल बनाएँगे।</p><a class="button primary full" href="{{ url_for('auth.register_laborer') }}">{{ icon('mic') }} बोलकर शुरू करें {{ icon('arrow') }}</a><p class="entry-foot">हिंदी में बात करें या लिखकर भरें</p></article>
+    <article class="employer-entry"><span class="icon-tile">{{ icon('factory') }}</span><div><p class="eyebrow">नियोक्ता · EMPLOYER</p><h2>मुझे श्रमिक चाहिए</h2><p>काम बताएँ। आवेदन देखें। टीम बनाएँ।</p><a class="button secondary" href="{{ url_for('auth.register_manager') }}">नियोक्ता खाता बनाएँ {{ icon('arrow') }}</a></div></article>
+  </div>
+</section>
+<section class="container journey-band" id="how" aria-label="काम तक पहुँचने के तीन कदम">
+  <article><span class="journey-icon">{{ icon('mic') }}<b>1</b></span><div><h2>बोलें</h2><p>अपना हुनर और अनुभव बताएँ</p></div></article>
+  <article><span class="journey-icon">{{ icon('work') }}<b>2</b></span><div><h2>काम देखें</h2><p>जगह, मज़दूरी और शर्तें सुनें</p></div></article>
+  <article><span class="journey-icon">{{ icon('check') }}<b>3</b></span><div><h2>आवेदन करें</h2><p>जाँचें, पुष्टि करें, स्थिति देखें</p></div></article>
+</section>
+<section class="container trust-row">{{ icon('shield') }}<div><strong>आपकी जानकारी। आपका फैसला।</strong><p>सेव करने से पहले सब जाँचें। प्रोफ़ाइल और नियोक्ता की जानकारी स्वयं दी गई है; सत्यापन नहीं हुआ है।</p></div><span class="tag">हिंदी + टाइपिंग</span></section>
 {% endblock %}

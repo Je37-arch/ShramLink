@@ -16,7 +16,7 @@
         <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
         {% block head %}{% endblock %}
     </head>
-    <body>
+    <body class="{% block body_class %}{% endblock %}">
         <a class="skip-link" href="#main">मुख्य भाग पर जाएँ / Skip to content</a>
         <header class="site-header">
             <div class="container header-inner">
@@ -29,8 +29,8 @@
                      height="38"><span>Shram<span>Link</span><small>काम से जुड़ें. आगे बढ़ें.</small></span></a>
                 <nav aria-label="मुख्य नेविगेशन / Main navigation">
                     {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('dashboard.index') }}">मेरे काम / Dashboard</a>
-                        {% if current_user.role.value == "laborer" %}<a href="{{ url_for('dashboard.onboarding') }}">प्रोफ़ाइल / Profile</a>{% endif %}
+                        <a href="{{ url_for('dashboard.index') }}">मेरे काम</a>
+                        {% if current_user.role.value == "laborer" %}<a href="{{ url_for('dashboard.onboarding') }}">प्रोफ़ाइल</a>{% endif %}
                         <form method="post" action="{{ url_for('auth.logout') }}">
                             <input type="hidden"
                                    name="csrf_token"
@@ -46,7 +46,8 @@
                 </nav>
             </div>
         </header>
-        {% if current_user.is_authenticated and current_user.demo_account %}<div class="demo-banner">DEMONSTRATION ACCOUNT · यह अभ्यास खाता है। असली भर्ती के लिए नया खाता बनाएँ।</div>{% endif %}
+        {% if current_user.is_authenticated and current_user.demo_account %}<div class="demo-banner">DEMO · अभ्यास खाता — सभी प्रदर्शन अवसर स्पष्ट रूप से चिह्नित हैं।</div>{% endif %}
+        {% if current_user.is_authenticated and (current_user.demo_account or current_user.role.value == 'admin') %}<div class="mode-indicator">{{ config.CONFIGURATION_LABEL }} · {{ config.EFFECTIVE_VOICE_PROVIDER }} voice · {{ config.EFFECTIVE_JOB_SOURCE }} jobs{% if config.CONFIGURATION_LABEL != config.REQUESTED_CONFIGURATION_LABEL %} · Requested {{ config.REQUESTED_CONFIGURATION_LABEL }}; optional setup missing, local fallback active{% endif %}</div>{% endif %}
         <div class="container flashes" aria-live="polite">
             {% for category, message in get_flashed_messages(with_categories=True) %}<p class="notice {{ category }}"
    role="status">{{ message }}</p>{% endfor %}
@@ -61,7 +62,7 @@
                 <br>
                 <span lang="en">Built for workers. Connected to industry.</span>
             </p>
-            <span class="muted">Hackathon V2 · 2026</span>
+            <span class="muted">Hackathon V3 · 2026</span>
         </footer>
         {% block scripts %}{% endblock %}
     </body>

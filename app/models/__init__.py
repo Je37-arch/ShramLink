@@ -157,6 +157,11 @@ class Job(db.Model):
     description = db.Column(db.Text, nullable=True)
     skill = db.Column(db.Enum(SkillType), nullable=False)
     wage_per_day = db.Column(db.Integer, nullable=False)
+    # Additive V3 fields. NULL category on historical records means unspecified.
+    employment_category = db.Column(db.String(30), nullable=True)
+    wage_amount = db.Column(db.Integer, nullable=True)
+    wage_unit = db.Column(db.String(10), nullable=True)
+    fixture_key = db.Column(db.String(80), nullable=True)
     workers_needed = db.Column(db.Integer, default=1)
     workers_hired = db.Column(db.Integer, default=0)
     shift_timing = db.Column(db.String(50), nullable=False)
@@ -189,6 +194,18 @@ class Job(db.Model):
     mass_hire_requests = db.relationship(
         "MassHireRequest", backref="job", lazy="dynamic"
     )
+
+    @property
+    def pay_amount(self):
+        return self.wage_amount if self.wage_amount is not None else self.wage_per_day
+
+    @property
+    def pay_unit(self):
+        return self.wage_unit or "day"
+
+    @property
+    def category(self):
+        return self.employment_category or "direct_unspecified"
 
     @property
     def required_experience_months(self):
@@ -391,3 +408,47 @@ class LoginAttempt(db.Model):
     account_key = db.Column(db.String(64), nullable=False, index=True)
     ip_key = db.Column(db.String(64), nullable=False, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow, index=True)
+
+
+class ExternalVacancy(db.Model):
+    """Read-only provider/fictional vacancy snapshot. Never a direct hiring job."""
+
+    __tablename__ = "external_vacancies"
+    id = db.Column(db.Integer, primary_key=True)
+    source_key = db.Column(db.String(180), nullable=False, unique=True)
+    source = db.Column(db.String(40), nullable=False)
+    payload = db.Column(db.JSON, nullable=False)
+    is_demo = db.Column(db.Boolean, nullable=False, default=False)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    retrieved_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+
+class DemoPreparation(db.Model):
+    """Local preview only. This model has no hiring/submission status or sender."""
+
+    __tablename__ = "demo_preparations"
+    id = db.Column(db.Integer, primary_key=True)
+    laborer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    vacancy_id = db.Column(
+        db.Integer, db.ForeignKey("external_vacancies.id"), nullable=False
+    )
+    snapshot = db.Column(db.JSON, nullable=False)
+    prepared_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    vacancy = db.relationship("ExternalVacancy")
+    __table_args__ = (
+        db.UniqueConstraint("laborer_id", "vacancy_id", name="unique_demo_preparation"),
+    )
+
+
+class ServiceBudget(db.Model):
+    """Atomic service limits across app processes; contains no transcripts."""
+
+    __tablename__ = "service_budgets"
+    key = db.Column(db.String(160), primary_key=True)
+    count = db.Column(db.Integer, nullable=False, default=0)
+
+
+class ServiceMetric(db.Model):
+    __tablename__ = "service_metrics"
+    key = db.Column(db.String(100), primary_key=True)
+    count = db.Column(db.Integer, nullable=False, default=0)

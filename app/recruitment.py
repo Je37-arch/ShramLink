@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app import validation
 from app.experience import experience_label
+from app.catalog import CATEGORY_LABELS
 from app.job_speech import job_summary
 from app.models import (
     ApplicationStatus,
@@ -214,7 +215,17 @@ def job_dict(job):
         factory=job.manager.factory_name,
         location=job.location,
         worksite_address=job.worksite_address,
-        wage=job.wage_per_day,
+        wage=job.pay_amount,
+        wage_unit=job.pay_unit,
+        employment_category=job.category,
+        category_label=CATEGORY_LABELS.get(
+            job.category, CATEGORY_LABELS["direct_unspecified"]
+        ),
+        category_claim="नियोक्ता ने प्रकार बताया है; सत्यापन नहीं हुआ।"
+        if job.employment_category
+        else "पुराने रिकॉर्ड में प्रकार नहीं बताया गया।",
+        source="ShramLink",
+        external=False,
         skill=job.skill.value,
         domain=job.domain,
         shift=job.shift_timing,

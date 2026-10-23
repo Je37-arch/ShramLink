@@ -102,6 +102,11 @@
         "job-skill",
         "job-factory",
         "job-wage",
+        "job-wage-unit",
+        "job-category",
+        "job-source",
+        "job-source-link",
+        "external-notice",
         "job-city",
         "job-shift",
         "job-experience",
@@ -118,6 +123,13 @@
         "restore-skips",
         "apply-dialog",
         "apply-summary",
+        "apply-title",
+        "direct-apply-note",
+        "external-preview",
+        "preview-source",
+        "preview-profile",
+        "preview-matches",
+        "preview-missing",
         "apply-error",
         "confirm-apply",
         "cancel-apply",
@@ -177,16 +189,17 @@
       bind("tutorial-next", () => this.lessonNext());
       bind("tutorial-skip", () => this.closeTutorial());
       bind("tutorial-audio", () => {
-        this.tutorialAudio = !this.tutorialAudio;
-        this.el["tutorial-audio"].setAttribute(
-          "aria-pressed",
-          String(this.tutorialAudio),
-        );
-        this.el["tutorial-audio"].textContent = this.tutorialAudio
-          ? "■ निर्देश रोकें"
-          : "♬ निर्देश सुनें";
-        if (this.tutorialAudio) this.readLesson();
-        else this.stopAudio();
+        this.tutorialAudio = true;
+        this.el["tutorial-audio"].setAttribute("aria-pressed", "true");
+        this.el["tutorial-audio"].textContent = "↻ निर्देश फिर सुनें";
+        this.readLesson();
+      });
+      bind("tutorial-stop-audio", () => {
+        this.tutorialAudio = false;
+        this.stopAudio();
+        this.el["tutorial-audio"].setAttribute("aria-pressed", "false");
+        this.el["tutorial-progress"].textContent =
+          "आवाज़ रोक दी। तीर देखकर अभ्यास जारी रखें।";
       });
       this.el.tutorial.addEventListener("cancel", (e) => {
         e.preventDefault();
@@ -262,22 +275,35 @@
       const values = {
         "job-title": job.title,
         "job-position": `${this.index + 1} / ${jobs.length}`,
-        "job-skill": skillLabels[job.skill],
+        "job-skill": skillLabels[job.skill] || "स्रोत का अवसर",
+        "job-category": job.category_label || "सीधा · प्रकार नहीं बताया",
+        "job-wage-unit": job.wage
+          ? job.wage_unit === "month"
+            ? "/ महीना"
+            : "/ दिन"
+          : "",
+        "job-source": `${job.source || "ShramLink"} · ${job.category_claim || "जानकारी स्वयं दी गई"}${job.retrieved_at ? " · प्राप्त: " + new Intl.DateTimeFormat("hi-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" }).format(new Date(job.retrieved_at)) : ""}`,
         "job-factory": job.factory + (job.demo ? " · DEMO" : ""),
-        "job-wage": `₹${job.wage.toLocaleString("en-IN")}`,
+        "job-wage": job.wage
+          ? `₹${job.wage.toLocaleString("en-IN")}`
+          : "नहीं बताया",
         "job-city": `शहर · ${job.location}`,
-        "job-shift": `${job.shift} · ${new Intl.DateTimeFormat("hi-IN", { dateStyle: "medium", timeZone: "Asia/Kolkata" }).format(new Date(job.start_date + "T12:00:00+05:30"))}`,
+        "job-shift": `${job.shift || "समय नहीं बताया"} · ${job.start_date ? new Intl.DateTimeFormat("hi-IN", { dateStyle: "medium", timeZone: "Asia/Kolkata" }).format(new Date(job.start_date + "T12:00:00+05:30")) : "तारीख नहीं बताई"}`,
         "job-experience":
           job.experience_label +
           (job.min_experience_months >= 24 && job.min_experience_months % 12
             ? ` · ठीक ${job.min_experience_months} महीने`
             : ""),
-        "job-address": job.worksite_address || job.location,
+        "job-address":
+          job.worksite_address ||
+          (job.external ? "पूरा पता नहीं दिया गया" : job.location),
         "job-requirements": job.requirements,
         "job-speech-text": job.spoken_summary,
-        "job-eligibility": job.match.eligible
-          ? "✓ आपके कौशल और अनुभव की शर्तें पूरी हैं।"
-          : "कौशल या अनुभव की शर्त पूरी नहीं है। प्रोफ़ाइल जाँचें।",
+        "job-eligibility": job.external
+          ? "केवल प्रदर्शन तैयारी। पूरी योग्यता और दस्तावेज़ जाँचना बाकी है।"
+          : job.match.eligible
+            ? "✓ आपके कौशल और अनुभव की शर्तें पूरी हैं।"
+            : "कौशल या अनुभव की शर्त पूरी नहीं है। प्रोफ़ाइल जाँचें।",
       };
       for (const [id, value] of Object.entries(values))
         this.el[id].textContent = value;
@@ -288,7 +314,18 @@
         li.textContent = value;
         reasons.append(li);
       }
-      this.el["apply-job"].disabled = !job.match.eligible;
+      this.el["apply-job"].disabled = !job.external && !job.match.eligible;
+      this.el["apply-job"].textContent = job.external
+        ? "प्रदर्शन तैयारी →"
+        : "आवेदन करें →";
+      this.el["external-notice"].hidden = !job.external;
+      this.el["job-source-link"].hidden = !job.external;
+      if (job.external) {
+        this.el["job-source-link"].href = job.original_url;
+        this.el["job-source-link"].textContent = job.demo
+          ? "काल्पनिक स्रोत लिंक ↗"
+          : "मूल अवसर देखें ↗";
+      }
       this.el["job-card"].querySelector("details").open = false;
       this.message(`काम ${this.index + 1} / ${jobs.length}। ${job.title}।`);
       if (this.autoRead && !this.el.tutorial.open) void this.read();
@@ -328,22 +365,87 @@
       this.render();
       this.message("छोड़ा हुआ काम वापस आ गया।");
     }
-    confirm() {
+    async confirm() {
       const job = this.current();
       if (!job || this.el.tutorial.open || this.sending) return;
-      if (!job.match.eligible) {
+      if (!job.external && !job.match.eligible) {
         this.message("इस काम के लिए कौशल और अनुभव की शर्त पूरी नहीं है।");
         return;
       }
       this.stopAudio();
       this.pending = job.id;
       this.el["apply-summary"].textContent =
-        `${job.title} · ${job.factory} · ₹${job.wage}/दिन · ${job.location} · ${job.shift} · ${job.start_date}`;
+        `${job.title} · ${job.factory} · ${job.wage ? "₹" + job.wage + (job.wage_unit === "month" ? "/महीना" : "/दिन") : "वेतन नहीं बताया"} · ${job.location} · ${job.shift || "समय नहीं बताया"} · ${job.start_date || "तारीख नहीं बताई"}`;
+      this.pendingJob = job;
+      this.reviewToken = null;
       this.el["apply-error"].textContent = "";
+      this.el["external-preview"].hidden = !job.external;
+      this.el["direct-apply-note"].hidden = !!job.external;
+      this.el["apply-title"].textContent = job.external
+        ? "स्थानीय प्रदर्शन तैयारी सेव करें?"
+        : "यह आवेदन भेजें?";
+      this.el["confirm-apply"].textContent = job.external
+        ? "हाँ, प्रदर्शन तैयारी सेव करें"
+        : "हाँ, आवेदन भेजें";
+      this.el["confirm-apply"].disabled = !!job.external;
       this.el["apply-dialog"].showModal();
       this.el["cancel-apply"].focus();
+      if (job.external) {
+        this.el["preview-matches"].replaceChildren();
+        this.el["preview-missing"].replaceChildren();
+        this.el["preview-profile"].textContent =
+          "आपकी सेव की हुई प्रोफ़ाइल जाँच रहे हैं…";
+        this.el["preview-source"].href = job.original_url;
+        const controller = new AbortController();
+        this.previewController?.abort();
+        this.previewController = controller;
+        const timer = this.win.setTimeout(() => controller.abort(), 8000);
+        try {
+          const response = await this.win.fetch(
+            `/api/laborer/external/${job.external_id}/preview`,
+            { signal: controller.signal, credentials: "same-origin" },
+          );
+          const preview = await response.json();
+          if (
+            this.previewController !== controller ||
+            this.pending !== job.id ||
+            !this.el["apply-dialog"].open
+          )
+            return;
+          if (!response.ok || !preview.confirmation_token)
+            throw new Error(preview.error || "विवरण नहीं मिला। फिर खोलें।");
+          this.reviewToken = preview.confirmation_token;
+          this.el["preview-profile"].textContent =
+            `${preview.profile.name} · ${preview.profile.location} · ठीक ${preview.profile.experience_months} महीने अनुभव। जानकारी स्वयं दी गई है।`;
+          for (const [id, values] of [
+            ["preview-matches", preview.job.match.reasons],
+            ["preview-missing", preview.job.match.unmet],
+          ]) {
+            for (const value of values) {
+              const li = this.doc.createElement("li");
+              li.textContent = value;
+              this.el[id].append(li);
+            }
+          }
+          this.el["confirm-apply"].disabled = false;
+        } catch (error) {
+          if (
+            this.previewController === controller &&
+            this.el["apply-dialog"].open
+          )
+            this.el["apply-error"].textContent =
+              error.name === "AbortError"
+                ? "स्रोत विवरण समय पर नहीं मिला। फिर खोलें।"
+                : "विवरण नहीं मिला। फिर खोलें।";
+        } finally {
+          this.win.clearTimeout(timer);
+        }
+      }
     }
     closeConfirm() {
+      this.previewController?.abort();
+      this.previewController = null;
+      this.reviewToken = null;
       this.pending = null;
       this.el["apply-dialog"].close();
       this.el["apply-job"].focus();
@@ -356,26 +458,45 @@
       )
         return;
       const id = this.pending;
+      const job = this.pendingJob;
+      if (job.external && !this.reviewToken) return;
       this.sending = true;
       this.el["confirm-apply"].disabled = true;
       this.el["cancel-apply"].disabled = true;
-      this.el["confirm-apply"].textContent = "भेज रहे हैं…";
+      this.el["confirm-apply"].textContent = job.external
+        ? "प्रदर्शन तैयारी सेव हो रही है…"
+        : "भेज रहे हैं…";
       const controller = new AbortController(),
         timer = this.win.setTimeout(() => controller.abort(), 15000);
       try {
-        const response = await this.win.fetch("/api/laborer/apply", {
-          method: "POST",
-          credentials: "same-origin",
-          signal: controller.signal,
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": this.doc.querySelector('meta[name="csrf-token"]')
-              .content,
+        const response = await this.win.fetch(
+          job.external
+            ? `/api/laborer/external/${job.external_id}/prepare`
+            : "/api/laborer/apply",
+          {
+            method: "POST",
+            credentials: "same-origin",
+            signal: controller.signal,
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": this.doc.querySelector('meta[name="csrf-token"]')
+                .content,
+            },
+            body: JSON.stringify(
+              job.external
+                ? { confirmed: "yes", confirmation_token: this.reviewToken }
+                : { job_id: id },
+            ),
           },
-          body: JSON.stringify({ job_id: id }),
-        });
+        );
         const result = await response.json();
-        if (!response.ok || !result.success || !result.application_id)
+        if (
+          !response.ok ||
+          !result.success ||
+          (job.external
+            ? !result.preparation_id || result.status !== "demo_prepared"
+            : !result.application_id)
+        )
           throw new Error(
             result.error || "आवेदन नहीं भेजा जा सका। फिर कोशिश करें।",
           );
@@ -391,7 +512,9 @@
           withdrawn: "यह आवेदन वापस लिया गया था",
         };
         this.message(
-          `✓ ${labels[result.status] || "आवेदन की स्थिति अपडेट हुई"}। ‘मेरे आवेदन’ में स्थिति देखें।`,
+          job.external
+            ? "Demo application prepared — not submitted externally। यह प्रदर्शन है। बाहरी कंपनी को कोई आवेदन नहीं भेजा गया है।"
+            : `✓ ${labels[result.status] || "आवेदन की स्थिति अपडेट हुई"}। ‘मेरे आवेदन’ में स्थिति देखें।`,
         );
         this.el["job-title"].focus();
       } catch (error) {
@@ -449,10 +572,22 @@
       if (this.tutorialAudio) this.readLesson();
     }
     async readLesson() {
+      if (!this.el.tutorial.open || this.doc.hidden || !this.tutorialAudio)
+        return;
+      this.stopAudio();
+      const token = this.readToken;
+      this.el["tutorial-progress"].textContent =
+        `कदम ${this.lesson + 1} / ${LESSONS.length}। निर्देश सुनें।`;
       const result = await this.speech.speak(LESSONS[this.lesson][2]);
-      if (!result.ok && result.reason !== "cancelled")
+      if (token !== this.readToken || !this.el.tutorial.open) return;
+      if (!result.ok && result.reason !== "cancelled") {
+        this.tutorialAudio = false;
+        this.el["tutorial-audio"].setAttribute("aria-pressed", "false");
         this.el["tutorial-progress"].textContent =
-          "आवाज़ नहीं चली। तीर देखकर अभ्यास करें या अगला कदम दबाएँ।";
+          "हिंदी आवाज़ नहीं चली। डिवाइस की आवाज़ और हिंदी भाषा जाँचें। तीर देखकर अभ्यास करें या अगला कदम दबाएँ।";
+      } else if (result.ok)
+        this.el["tutorial-progress"].textContent =
+          `कदम ${this.lesson + 1} / ${LESSONS.length}। स्वाइप करें या अगला कदम दबाएँ। फिर सुनने के लिए ↻ दबाएँ।`;
     }
     lessonNext() {
       if (!this.el.tutorial.open) return;
