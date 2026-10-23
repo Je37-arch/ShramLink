@@ -105,11 +105,13 @@ def seed_v3(password):
     if not 10 <= len(password) <= 128:
         raise click.ClickException("Use 10–128 characters.")
     # Refuse to mix sample accounts with a database containing non-demo users.
-    if User.query.filter(User.demo_account.is_(False)).first():
+    if User.query.filter(User.demo_account.is_not(True)).first():
         raise click.ClickException(
             "Non-demo accounts exist. Use a separate empty demo DATABASE_URL; no records changed."
         )
     worker = User.query.filter_by(email="worker.v3@example.invalid").first()
+    if worker and worker.role != UserRole.LABORER:
+        raise click.ClickException("Fixture worker identity has an unexpected role; no account will be overwritten.")
     if not worker:
         worker = User(
             email="worker.v3@example.invalid",
@@ -147,6 +149,8 @@ def seed_v3(password):
             n = list(dict.fromkeys(row[1] for row in DIRECT)).index(factory) + 1
             email = f"employer{n}.v3@example.invalid"
             manager = User.query.filter_by(email=email).first()
+            if manager and manager.role != UserRole.MANAGER:
+                raise click.ClickException("Fixture employer identity has an unexpected role; no account will be overwritten.")
             if not manager:
                 manager = User(
                     email=email,

@@ -186,12 +186,33 @@ def discovery():
     if not current_user.profile_complete:
         return redirect(url_for("dashboard.onboarding"))
     skill, location = filters()
-    rows = [
-        row for row in recruitment.discover(current_user, skill, location) if not row[2]
-    ]
-    external_cards, feed_message = external_jobs.available_cards(
-        current_user, skill, location
+    from app.discovery_state import state
+
+    all_rows = recruitment.discover(current_user)
+    all_external, feed_message = external_jobs.available_cards(
+        current_user, include_prepared=True
     )
+    selected_rows = [
+        r
+        for r in all_rows
+        if (not skill or r[0].skill.value == skill)
+        and (not location or r[0].location == location)
+    ]
+    selected_external = [
+        r
+        for r in all_external
+        if (not skill or r.get("skill") == skill)
+        and (not location or r.get("location") == location)
+    ]
+    discovery_state = state(
+        selected_rows,
+        selected_external,
+        all_rows,
+        all_external,
+        bool(skill or location),
+    )
+    rows = [r for r in selected_rows if not r[2]]
+    external_cards = [r for r in selected_external if not r["prepared"]]
     return render_template(
         "discovery.html",
         rows=rows,
@@ -199,6 +220,7 @@ def discovery():
         + external_cards,
         external_cards=external_cards,
         feed_message=feed_message,
+        discovery_state=discovery_state,
         filter_skill=skill,
         filter_location=location,
     )

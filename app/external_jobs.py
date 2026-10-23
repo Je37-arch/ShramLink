@@ -95,10 +95,12 @@ def card(vacancy, worker):
     return data
 
 
-def available_cards(worker, skill=None, location=None):
+def available_cards(
+    worker, skill=None, location=None, *, refresh=True, include_prepared=False
+):
     mode = current_app.config["EFFECTIVE_JOB_SOURCE"]
     message = ""
-    if mode == "integrated":
+    if mode == "integrated" and refresh:
         from app.job_feed import refresh_feed
 
         message = refresh_feed()
@@ -123,9 +125,11 @@ def available_cards(worker, skill=None, location=None):
         )
     rows = []
     for vacancy in query.all():
-        if vacancy.id in prepared:
+        if vacancy.id in prepared and not include_prepared:
             continue
         data = card(vacancy, worker)
+        if include_prepared:
+            data["prepared"] = vacancy.id in prepared
         if (
             skill
             and data.get("skill") != skill

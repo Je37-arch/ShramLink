@@ -159,7 +159,7 @@
     const value = normalize(text)
       .replace(/^(जी\s+|ji\s+)/u, "")
       .replace(
-        /^(मेरी उम्र|मेरी आयु|उम्र|आयु|मुझे|मेरा अनुभव|मैं|meri umar|meri age|main|mein)\s*/u,
+        /^(मेरी उम्र|मेरी आयु|उम्र|आयु|मुझे|मेरा अनुभव|मैं|meri umar|meri age|main|mein)(?:\s+|$)/u,
         "",
       )
       .replace(
@@ -193,7 +193,7 @@
       .replace(/^(जी\s+|ji\s+)/u, "")
       .replace(/^(मुझे|मेरे पास|मेरा|मैं|mere paas|mujhe|mera|main)\s+/u, "")
       .replace(
-        /\s*(का अनुभव है|का अनुभव|अनुभव है|अनुभव|experience hai|experience|है|हूँ|हूं)\s*$/u,
+        /(?:^|\s+)(का अनुभव है|का अनुभव|अनुभव है|अनुभव|experience hai|experience|है|हूँ|हूं)\s*$/u,
         "",
       )
       .trim();
@@ -204,7 +204,11 @@
     )
       return 0;
     // Approximation, ranges, alternatives and unrecognised residue require clarification.
-    if (/लगभग|करीब|या|लगता|around|about|lagbhag|\bya\b|\bor\b|[\-–]/u.test(v))
+    if (
+      /(?:^|\s)(?:लगभग|करीब|या|लगता|around|about|lagbhag|ya|or)(?=\s|$)|[\-–]/u.test(
+        v,
+      )
+    )
       return null;
     const tokens = v.split(" ");
     let total = 0,
@@ -317,16 +321,22 @@
   function correction(text) {
     const v = normalize(text);
     if (
-      !/बदलो|बदलें|सुधारो|गलत|^नहीं|^नही|\bbadlo\b|^nahi|change|correct/u.test(
+      !/(?:^|\s)(?:बदलो|बदलें|सुधारो|गलत|badlo|change|correct)(?=\s|$)|^(?:नहीं|नही|nahi|nahin)(?=\s|$)/u.test(
         v,
       )
     )
       return null;
     for (const [key, words] of Object.entries(FIELD_WORDS))
-      if (words.some((w) => v.includes(w))) {
-        const value = /बदलो|बदलें|सुधारो|badlo|change|correct/u.test(v)
-          ? null
-          : parse(key, v.replace(/^(नहीं|नही|nahi|nahin)\s*/u, ""));
+      if (words.some((w) => ` ${v} `.includes(` ${w} `))) {
+        const value =
+          /(?:^|\s)(?:बदलो|बदलें|सुधारो|badlo|change|correct)(?=\s|$)/u.test(v)
+            ? null
+            : parse(
+                key,
+                String(text)
+                  .trim()
+                  .replace(/^(?:नहीं|नही|nahin|nahi)(?:[\s,।;!?]+|$)/iu, ""),
+              );
         return { key, value };
       }
     return null;
@@ -337,7 +347,7 @@
     if (key === "eshram_number") return idDigits(text);
     if (["skills", "preferred_domain", "location"].includes(key)) {
       if (
-        /नहीं|नही|\bnahi\b|\bnot\b|\bor\b|\bya\b|(?:^|\s)या(?:\s|$)/u.test(
+        /(?:^|\s)(?:नहीं|नही|nahi|nahin|not|or|ya|या)(?=\s|$)/u.test(
           normalize(text),
         )
       )
@@ -350,10 +360,10 @@
     }
     let value = String(text)
       .trim()
-      .replace(
-        /^(नहीं[,।]?\s*|नही[,।]?\s*|nahi[, ]+)?(जी[,।]?\s*|ji[, ]+)?/iu,
-        "",
-      )
+      // A polite/negative prefix must be a whole token. JavaScript \b does
+      // not delimit Devanagari: "जीत" and "जीवन" are names, not "जी" + filler.
+      .replace(/^(?:नहीं|नही|nahin|nahi)(?:[\s,।;!?]+|$)/iu, "")
+      .replace(/^(?:जी|ji)(?:[\s,।;!?]+|$)/iu, "")
       .replace(
         /^(मेरा नाम|नाम|मैं|mera naam|mera nam|my name is|naam)\s+/iu,
         "",
@@ -363,7 +373,7 @@
       .trim();
     if (
       command(value) ||
-      /पता नहीं|नहीं पता|नहीं समझा|समझ नहीं|कुछ नहीं|ठीक है|pata nahi|nahi pata|don't know|dont know|not sure|okay|^ok$/iu.test(
+      /(?:^|\s)(?:पता नहीं|नहीं पता|नहीं समझा|समझ नहीं|कुछ नहीं|ठीक है|pata nahi|nahi pata|don't know|dont know|not sure|okay|ok)(?=\s|$)/iu.test(
         value,
       )
     )

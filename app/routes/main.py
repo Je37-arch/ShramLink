@@ -11,6 +11,26 @@ def index():
     return render_template("index.html")
 
 
+@main_bp.route("/inside")
+def inside():
+    from app.showcase import (
+        BASE_SHA,
+        BRANCH,
+        RELEASE_EVIDENCE,
+        REPOSITORY,
+        synthetic_matches,
+    )
+
+    return render_template(
+        "inside.html",
+        repository=REPOSITORY,
+        source_root=f"{REPOSITORY}/blob/{BRANCH}",
+        base_sha=BASE_SHA,
+        evidence=RELEASE_EVIDENCE,
+        examples=synthetic_matches(),
+    )
+
+
 @main_bp.route("/about")
 def about():
     return redirect(url_for("main.index", _anchor="how"))

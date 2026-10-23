@@ -2,7 +2,12 @@
 
 A Hindi-first industrial employment demonstrator for Delhi–NCR. One Flask / SQLAlchemy / Jinja application, retaining the original worker–employer relationship, navy/turquoise identity and recruitment rules. No frontend framework migration.
 
-**Working branch:** `feature/shramlink-v3` in `Je37-arch/ShramLink`.
+**Release branch:** `feature/shramlink-v3-release` in `Je37-arch/ShramLink`.
+**Protected V3 base:** `0bea8e29aca12a2f48c08b9c748f6b7b6f127f33`.
+
+**Team handoff:** [Quick start](docs/QUICK_START_FOR_TEAM.md) · [Final handoff](docs/FINAL_HANDOFF.md) · [Merge guide](docs/MERGE_GUIDE.md) · [Changed files](docs/RELEASE_FILE_INVENTORY.md) · [New release tests](docs/RELEASE_TEST_RESULTS.md) · [Judge showcase](docs/JUDGE_SHOWCASE.md) · [Limitations](docs/KNOWN_LIMITATIONS.md) · [Deployment checklist](docs/DEPLOYMENT_CHECKLIST.md).
+
+Open **`/inside`** for a read-only architecture guide and synthetic examples. The release fixes Hindi name-prefix parsing and adds guarded demo bootstrap/recovery. It adds **no database schema changes over V3**. Public deployment is not part of this integration handoff.
 **Protected V2 baseline:** `06f83a2f6f25eee607922a12b53712a5d97b2907`.
 
 **बोलें → काम देखें → आवेदन करें → स्थिति देखें**
@@ -22,23 +27,25 @@ Skills, employment categories and identities are self-reported or source/operato
 Tested with Python 3.12 and SQLite. Use Python 3.10+.
 
 ```bash
-git clone --branch feature/shramlink-v3 --single-branch https://github.com/Je37-arch/ShramLink.git
+git clone --branch feature/shramlink-v3-release --single-branch https://github.com/Je37-arch/ShramLink.git
 cd ShramLink
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
 cp .env.example .env
-python -m flask --app run.py init-db
+export DATABASE_URL="sqlite:///$PWD/instance/demo-release.sqlite3"
+export SHRAMLINK_DEMO=true
+export VOICE_PROVIDER=deterministic
+export JOB_SOURCE=demo
+python -m flask --app run.py bootstrap-demo
 python run.py
 ```
 
 Open **http://127.0.0.1:5000**. On Windows use `.venv\Scripts\activate`. The app does not create tables, accounts or vacancies at startup. `python init_db.py` is an equivalent initializer.
 
-To use fictional fixtures, point `DATABASE_URL` to a **separate empty demo database**, initialize it, then run:
+The fresh bootstrap above initializes a **separate demo database** and the six direct/two external fictional jobs together, before registration. It reports **6 visible direct, 3 eligible direct, 2 external previews, 8 cards** for the seeded worker. `init-db` alone never adds vacancies. The old `seed-demo-v3` command remains available, but the guarded bootstrap is recommended for a fresh handoff demonstration.
 
-```bash
-python -m flask --app run.py seed-demo-v3
-```
+If an existing database contains ordinary worker accounts, keep it intact and choose a new empty demo path. Never relabel accounts or delete data to bypass the guard. To explicitly renew expired, unused ACTIVE fixtures in an all-demo database, use `bootstrap-demo --refresh-unused-dates`; applied/filled/cancelled opportunities are preserved.
 
 Enter a demonstration password at the hidden prompt; no default password exists. Accounts:
 
@@ -58,7 +65,7 @@ Set the two server variables in your private environment and restart:
 | V3c | `deterministic` | `integrated` |
 | V3d | `api` | `integrated` |
 
-Missing optional configuration falls back to local operation. A demo-account/admin indicator shows requested and effective configuration. Ordinary workers have no configuration controls. A configured provider is not proof that a live request succeeded.
+Missing optional configuration falls back to local operation. A demo-account/admin indicator and the public read-only judge page distinguish requested and effective configured modes. Workers have no configuration controls. A configured provider is not proof that a live request succeeded.
 
 See [configuration and migration details](docs/V3_CONFIGURATION.md). The important variables are:
 
@@ -106,7 +113,7 @@ python scripts/capture_screenshots.py --label v3
 
 Tests use temporary databases and fictional accounts. Browser tests exercise actual Flask routes in Chromium; speech and authenticated xAI responses are mocked. The screenshot script uses temporary synthetic accounts and does not save cookies.
 
-[Before/after screenshot gallery](docs/screenshots/index.html) contains landing, onboarding, dashboard and discovery at 390×844, 768×1024 and 1440×1000. Full-page captures may extend below those viewports. [Evidence and test limits](docs/V3_TEST_RESULTS.md).
+[Before/after screenshot gallery](docs/screenshots/index.html) contains landing, onboarding, dashboard and discovery at 390×844, 768×1024 and 1440×1000. Full-page captures may extend below those viewports. [New release evidence and test limits](docs/RELEASE_TEST_RESULTS.md). Historical V3 evidence remains in [V3_TEST_RESULTS.md](docs/V3_TEST_RESULTS.md).
 
 ## Migration, security and deployment
 
@@ -116,7 +123,7 @@ Do not run V2 against new monthly V3 jobs: its old daily-wage field cannot repre
 
 Authentication, role guards, CSRF, password hashing, secure session settings, database login throttling, restrictive CSP, local fonts and no-store page responses are retained. Committed private files from earlier history still require credential rotation; removing files from a new commit does not erase history. Use a new `SECRET_KEY`, reset affected account passwords and rotate any previously exposed service credentials before any deployment. Never commit `.env`, session cookies, databases or personal information.
 
-For a persistent SQLite deployment behind HTTPS, see [deployment guide](docs/V3_DEPLOYMENT_GUIDE.md). `/healthz` checks database readiness. A production Dockerfile is provided. **No public deployment has been published or verified.** Approval is required before publishing.
+For optional hosting after integration, see the [release deployment checklist](docs/DEPLOYMENT_CHECKLIST.md) and retained [V3 deployment guide](docs/V3_DEPLOYMENT_GUIDE.md). `/healthz` checks database readiness. A production Dockerfile is provided. **No public deployment has been published or verified.** Approval is required before publishing.
 
 ## Release material
 

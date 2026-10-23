@@ -8,6 +8,7 @@ from flask import Flask, jsonify, redirect, render_template, request, url_for
 from flask_wtf.csrf import CSRFError, CSRFProtect
 from werkzeug.exceptions import HTTPException
 from werkzeug.security import generate_password_hash
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.catalog import (
     DOMAINS,
@@ -40,6 +41,7 @@ def create_app(test_config=None):
         SQLALCHEMY_DATABASE_URI=os.getenv("DATABASE_URL")
         or "sqlite:///" + str(BASE_DIR / "instance" / "shramlink.sqlite3"),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        SQLALCHEMY_ENGINE_OPTIONS={"hide_parameters": True},
         SESSION_COOKIE_NAME="shramlink_session_v2",
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SECURE=production,
@@ -155,6 +157,17 @@ def create_app(test_config=None):
         if request.path.startswith("/api/"):
             return jsonify(error=message, success=False), 500
         return render_template("error.html", code=500, message=message), 500
+
+    @app.errorhandler(SQLAlchemyError)
+    def database_error(error):
+        db.session.rollback()
+        # Do not include SQL, bind parameters, profiles or connection URLs in logs.
+        app.logger.error("Database unavailable; request was not completed.")
+        message = "सेवा अभी उपलब्ध नहीं है। फिर कोशिश करें / Service temporarily unavailable. Please retry."
+        if request.path.startswith("/api/"):
+            return jsonify(error=message, success=False), 503
+        # Standalone template avoids another user/session lookup into the failed DB.
+        return render_template("service_unavailable.html", message=message), 503
 
     @app.after_request
     def headers(response):

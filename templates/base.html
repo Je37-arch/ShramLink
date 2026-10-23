@@ -39,7 +39,7 @@
                         </form>
                     {% else %}
                         <a class="desktop-link"
-                           href="{{ url_for('main.index', _anchor='how') }}">कैसे काम करता है</a>
+                           href="{{ url_for('main.inside') }}">कैसे काम करता है</a>
                         <a class="button small secondary"
                            href="{{ url_for('auth.login') }}">लॉग इन / Log in <span aria-hidden="true">↗</span></a>
                     {% endif %}
@@ -62,7 +62,7 @@
                 <br>
                 <span lang="en">Built for workers. Connected to industry.</span>
             </p>
-            <span class="muted">Hackathon V3 · 2026</span>
+            <a href="{{ url_for('main.inside') }}">Inside ShramLink · कैसे काम करता है</a>
         </footer>
         {% block scripts %}{% endblock %}
     </body>

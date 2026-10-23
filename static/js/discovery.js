@@ -97,6 +97,10 @@
         "discovery-status",
         "job-card",
         "stack-empty",
+        "stack-empty-title",
+        "stack-empty-message",
+        "stack-recover",
+        "empty-restore",
         "job-position",
         "job-title",
         "job-skill",
@@ -151,6 +155,7 @@
       bind("skip-job", () => this.skip());
       bind("apply-job", () => this.confirm());
       bind("undo-skip", () => this.undo());
+      bind("empty-restore", () => this.el["restore-skips"].click());
       bind("restore-skips", () => {
         this.skips = [];
         this.persist();
@@ -263,7 +268,27 @@
       this.el["next-job"].disabled = !job || this.index >= jobs.length - 1;
       this.el["undo-skip"].disabled = !this.skips.length;
       this.el["restore-skips"].disabled = !this.skips.length;
-      if (!job) return;
+      this.el["empty-restore"].hidden = !this.skips.length;
+      if (!job) {
+        if (this.skips.length) {
+          this.el["stack-empty"].dataset.reason = "skipped";
+          this.el["stack-empty-title"].textContent =
+            "आपने ये काम छोड़ दिए हैं।";
+          this.el["stack-empty-message"].textContent =
+            "काम वापस लाएँ। कोई आवेदन अपने आप नहीं भेजा जाएगा।";
+        } else if (this.applied.size) {
+          this.el["stack-empty"].dataset.reason = "reviewed";
+          this.el["stack-empty-title"].textContent =
+            "इन कामों पर कार्रवाई हो चुकी है।";
+          this.el["stack-empty-message"].textContent =
+            "आवेदन या प्रदर्शन तैयारी की स्थिति मेरे आवेदन में देखें।";
+        }
+        if (this.skips.length || this.applied.size) {
+          this.el["stack-recover"].href = "/dashboard/laborer#applications";
+          this.el["stack-recover"].textContent = "मेरे आवेदन";
+        }
+        return;
+      }
       const skillLabels = {
         welder: "वेल्डर",
         construction: "निर्माण मिस्त्री",

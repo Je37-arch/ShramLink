@@ -60,6 +60,46 @@ def init_database():
 
 
 def register_commands(app):
+    @app.cli.command("bootstrap-demo")
+    @click.option(
+        "--password",
+        prompt="Choose a demonstration password (10+ characters)",
+        hide_input=True,
+        confirmation_prompt=True,
+    )
+    @click.option(
+        "--refresh-unused-dates",
+        is_flag=True,
+        help="Explicitly move expired, unused ACTIVE fixture dates forward; preserve all application history.",
+    )
+    def bootstrap_demo(password, refresh_unused_dates):
+        from app.demo_setup import bootstrap
+
+        result = bootstrap(password, refresh_unused_dates)
+        click.echo(
+            "Demo database ready. Existing accounts, passwords and decisions retained."
+        )
+        click.echo(
+            "Worker: worker.v3@example.invalid; employers: employer1.v3@example.invalid through employer4.v3@example.invalid"
+        )
+        click.echo(
+            f"Visible direct: {result['visible_direct']}; eligible direct: {result['eligible_direct']}; "
+            f"external demo previews: {result['visible_external']}; total visible cards: {result['visible_total']}."
+        )
+        click.echo(
+            "Counts use the saved seeded worker, no filters, and exclude prior applications/preparations; browser skips are separate."
+        )
+        click.echo(
+            f"Expired direct fixtures: {result['expired_direct']}; unused dates refreshed: {result['dates_refreshed']}."
+        )
+        if result["expired_direct"]:
+            click.echo(
+                "For a new demonstration use a fresh database, or explicitly --refresh-unused-dates. Used/closed/filled jobs are never reset."
+            )
+        click.echo(
+            "Seed before registering new participants. A later non-demo account makes repeat bootstrap refuse safely; ordinary startup still works."
+        )
+
     @app.cli.command("init-db")
     def init_db_command():
         init_database()

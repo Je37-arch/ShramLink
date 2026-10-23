@@ -43,7 +43,44 @@ test("Name cleanup and e-Shram require explicit valid values", () => {
 });
 
 const L = require("../static/js/profile-language.js");
+for (const [input, expected] of [
+  ["जीत झा", "जीत झा"],
+  ["जीवन कुमार", "जीवन कुमार"],
+  ["जीतेन्द्र शर्मा", "जीतेन्द्र शर्मा"],
+  ["जी, मेरा नाम जीत झा है", "जीत झा"],
+  ["मेरा नाम रमेश कुमार है", "रमेश कुमार"],
+  ["जी जीवन कुमार", "जीवन कुमार"],
+  ["जी।जीत झा", "जीत झा"],
+  ["नहीद खान", "नहीद खान"],
+  ["Jitendra Sharma", "Jitendra Sharma"],
+  ["Nahid Khan", "Nahid Khan"],
+  ["नहीं, मेरा नाम जीत झा है", "जीत झा"],
+])
+  test(`name token boundary: ${input}`, () =>
+    assert.equal(L.parse("name", input), expected));
+test("correction and negation require whole words and preserve name case", () => {
+  assert.deepEqual(L.correction("नहीं, मेरा नाम जीत झा है"), {
+    key: "name",
+    value: "जीत झा",
+  });
+  assert.deepEqual(L.correction("Nahi, mera naam Jeet Jha hai"), {
+    key: "name",
+    value: "Jeet Jha",
+  });
+  assert.equal(L.correction("Nahid name"), null);
+  assert.equal(L.correction("नाम बदलोमत"), null);
+  assert.equal(L.correction("surname गलत"), null);
+  assert.equal(L.command("नहीद"), null);
+  assert.equal(L.parse("location", "नहीद दिल्ली में"), "Delhi");
+  assert.equal(L.parse("location", "दिल्ली नहीं"), null);
+});
 const { direction } = require("../static/js/discovery.js");
+test("optional ID absence remains a skip, not a correction", () => {
+  for (const input of ["मेरे पास ई-श्रम नंबर नहीं है", "mere paas e-shram number nahi hai"]) {
+    assert.equal(L.correction(input), null);
+    assert.equal(L.command(input), "skip");
+  }
+});
 for (const [input, months] of [
   ["6 mahine", 6],
   ["1 saal", 12],
